@@ -1,0 +1,156 @@
+package server
+
+import (
+	"errors"
+	"reflect"
+	"sync"
+	"unicode"
+	"unicode/utf8"
+	"frpc/log"
+	"context"
+)
+
+var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
+
+var typeOfContext = reflect.TypeOf((*context.Context)(nil)).Elem()
+
+type methodType struct {
+	sync.Mutex
+	method    reflect.Method
+	ArgType   reflect.Type
+	ReplyType reflect.Type
+	numCalls  uint
+}
+
+type service struct {
+	name   string
+	rcvr   reflect.Value
+	typ    reflect.Type
+	method map[string]*methodType
+}
+
+func (s *Server) Register(rcvr interface{}) error {
+	return s.register(rcvr, "", false)
+}
+
+func (s *Server) RegisterName(rcvr interface{}, name string) error {
+	return s.register(rcvr, name, true)
+}
+
+func (s *Server) register(rcvr interface{}, name string, useName bool) error {
+	s.serviceMapMu.Lock()
+	defer s.serviceMapMu.Unlock()
+	if s.serviceMap == nil {
+		s.serviceMap = make(map[string]*service)
+	}
+	service := new(service)
+	service.typ = reflect.TypeOf(rcvr)
+	service.rcvr = reflect.ValueOf(rcvr)
+	//deal name
+	sname := name
+	if !useName {
+		sname = reflect.Indirect(service.rcvr).Type().Name()
+	}
+	if sname == "" {
+		errorStr := "rpc.Register: no service name for type " + service.typ.String()
+		log.Error(errorStr)
+		return errors.New(errorStr)
+	}
+	if !useName && !isExported(sname) {
+		errorStr := "rpcx.Register: type " + sname + " is not exported"
+		log.Error(errorStr)
+		return errors.New(errorStr)
+	}
+	service.name = sname
+
+	//deal method
+	service.method = suitableMethods(service.typ, true)
+	if len(service.method) == 0{
+		errorStr := "rpcx.Register: type " + sname + " has no exported methods of suitable type"
+		log.Error(errorStr)
+		return errors.New(errorStr)
+	}
+	s.serviceMap[service.name] = service
+	return nil
+}
+
+func isExported(name string) bool {
+	rune, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(rune)
+}
+
+func isExportedOrBuiltinType(t reflect.Type) bool {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	// PkgPath will be non-empty even for an exported type,
+	// so we need to check the type name as well.
+	return isExported(t.Name()) || t.PkgPath() == ""
+}
+
+//suitableMethods returns suitable Rpc methods of typ, it will report
+func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
+	methods := make(map[string]*methodType)
+	for m := 0; m < typ.NumMethod(); m++ {
+		method := typ.Method(m)
+		mtype := method.Type
+		mname := method.Name
+		if method.PkgPath != "" {
+			continue
+		}
+		//methods needs four ins
+		if mtype.NumIn() != 4 {
+			if reportErr {
+				log.Info("method", mname, "has wrong number of ins:", mtype.NumIn())
+			}
+			continue
+		}
+		//first in must be context.Context
+		ctxType := mtype.In(1)
+		if !ctxType.Implements(typeOfContext) {
+			if reportErr {
+				log.Info("method", mname, "has wrong number of ins:", mtype.NumIn())
+			}
+			continue
+		}
+		//seconds need not be a pointer  why?
+		argType := mtype.In(2)
+		if !isExportedOrBuiltinType(argType) {
+			if reportErr {
+				log.Info(mname, "argument type not exported:", argType)
+			}
+			continue
+		}
+		// Third must be a pointer.
+		replyType := mtype.In(3)
+		if replyType.Kind() != reflect.Ptr {
+			if reportErr {
+				log.Info("method", mname, "reply type not a pointer:", replyType)
+			}
+			continue
+		}
+		// Reply type must be exported.
+		if !isExportedOrBuiltinType(replyType) {
+			if reportErr {
+				log.Info("method", mname, "reply type not exported:", replyType)
+			}
+			continue
+		}
+		// Method needs one out.
+		if mtype.NumOut() != 1 {
+			if reportErr {
+				log.Info("method", mname, "has wrong number of outs:", mtype.NumOut())
+			}
+			continue
+		}
+		// The return type of the method must be error.
+		if returnType := mtype.Out(0); returnType != typeOfError {
+			if reportErr {
+				log.Info("method", mname, "returns", returnType.String(), "not error")
+			}
+			continue
+		}
+		methods[mname] = &methodType{method: method, ArgType: argType, ReplyType: replyType}
+	}
+	return methods
+}

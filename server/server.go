@@ -6,9 +6,21 @@ import (
 	"time"
 	"errors"
 	"frpc/log"
+	"bufio"
+	"context"
+	"io"
+	"frpc/protocol"
 )
 
 var ErrServerClosed = errors.New("http: Server closed")
+
+
+const (
+	// ReaderBuffsize is used for bufio reader.
+	ReaderBuffsize = 1024
+	// WriterBuffsize is used for bufio writer.
+	WriterBuffsize = 1024
+)
 
 type Server struct {
 	serviceMapMu sync.RWMutex
@@ -88,5 +100,25 @@ func (s *Server) getDoneChan() <-chan struct{} {
 }
 
 func (server *Server) ServeConn(conn net.Conn) {
+	r := bufio.NewReaderSize(conn, ReaderBuffsize)
+	for  {
 
+		req, err := server.readRequest(context.Background(), r)
+		if err != nil {
+			req = nil
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				return
+			}
+			err = errors.New("rpc: server cannot decode request: " + err.Error())
+			return
+		}
+
+	}
+}
+
+func (s *Server) readRequest(ctx context.Context, r io.Reader) (req *protocol.Message, err error) {
+	// pool req?
+	req = protocol.GetMsgs()
+	err = req.Decode(r)
+	return req, err
 }

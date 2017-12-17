@@ -11,6 +11,49 @@ const (
 	magicNumber byte = 0x08
 )
 
+const (
+	// ServiceError contains error info of service invocation
+	ServiceError = "__rpcx_error__"
+)
+
+type MessageType byte
+
+const (
+	Request  MessageType = iota
+	Response
+)
+
+type CompressType byte
+
+const (
+	// None does not compress.
+	None CompressType = iota
+	// Gzip uses gzip compression.
+	Gzip
+)
+
+type MessageStatusType byte
+
+const (
+	// Normal is normal requests and responses.
+	Normal MessageStatusType = iota
+	// Error indicates some errors occur.
+	Error
+)
+
+type SerializeType byte
+
+const (
+	// SerializeNone uses raw []byte and don't serialize/deserialize
+	SerializeNone SerializeType = iota
+	// JSON for payload.
+	JSON
+	// ProtoBuffer for payload.
+	ProtoBuffer
+	// MsgPack for payload
+	MsgPack
+)
+
 var MaxMessageLength = 0
 
 var (
@@ -31,22 +74,125 @@ type Message struct {
 	data          []byte
 }
 
+// CheckMagicNumber checks whether header starts rpcx magic number.
+func (h Header) CheckMagicNumber() bool {
+	return h[0] == magicNumber
+}
+
+// Version returns version of rpcx protocol.
+func (h Header) Version() byte {
+	return h[1]
+}
+
+// SetVersion sets version for this header.
+func (h *Header) SetVersion(v byte) {
+	h[1] = v
+}
+
+// MessageType returns the message type.
+func (h Header) MessageType() MessageType {
+	return MessageType(h[2]&0x80) >> 7
+}
+
+// SetMessageType sets message type.
+func (h *Header) SetMessageType(mt MessageType) {
+	h[2] = h[2] | (byte(mt) << 7)
+}
+
+// IsHeartbeat returns whether the message is heartbeat message.
+func (h Header) IsHeartbeat() bool {
+	return h[2]&0x40 == 0x40
+}
+
+// SetHeartbeat sets the heartbeat flag.
+func (h *Header) SetHeartbeat(hb bool) {
+	if hb {
+		h[2] = h[2] | 0x40
+	} else {
+		h[2] = h[2] &^ 0x40
+	}
+}
+
+// IsOneway returns whether the message is one-way message.
+// If true, server won't send responses.
+func (h Header) IsOneway() bool {
+	return h[2]&0x20 == 0x20
+}
+
+// SetOneway sets the oneway flag.
+func (h *Header) SetOneway(oneway bool) {
+	if oneway {
+		h[2] = h[2] | 0x20
+	} else {
+		h[2] = h[2] &^ 0x20
+	}
+}
+
+// CompressType returns compression type of messages.
+func (h Header) CompressType() CompressType {
+	return CompressType((h[2] & 0x1C) >> 2)
+}
+
+// SetCompressType sets the compression type.
+func (h *Header) SetCompressType(ct CompressType) {
+	h[2] = h[2] | ((byte(ct) << 2) & 0x1C)
+}
+
+// MessageStatusType returns the message status type.
+func (h Header) MessageStatusType() MessageStatusType {
+	return MessageStatusType(h[2] & 0x03)
+}
+
+// SetMessageStatusType sets message status type.
+func (h *Header) SetMessageStatusType(mt MessageStatusType) {
+	h[2] = h[2] | (byte(mt) & 0x03)
+}
+
+// SerializeType returns serialization type of payload.
+func (h Header) SerializeType() SerializeType {
+	return SerializeType((h[3] & 0xF0) >> 4)
+}
+
+// SetSerializeType sets the serialization type.
+func (h *Header) SetSerializeType(st SerializeType) {
+	h[3] = h[3] | (byte(st) << 4)
+}
+
+// Seq returns sequence number of messages.
+func (h Header) Seq() uint64 {
+	return binary.BigEndian.Uint64(h[4:])
+}
+
+// SetSeq sets  sequence number.
+func (h *Header) SetSeq(seq uint64) {
+	binary.BigEndian.PutUint64(h[4:], seq)
+}
+
+func (m Message) Copy() *Message {
+	header := *m.Header
+	c := GetMsgs()
+	c.Header = header
+	c.ServicePath = m.ServicePath
+	c.ServiceMethod = m.ServiceMethod
+	return c
+}
+
 func (message *Message) Decode(reader io.Reader) error {
 	// parse header
 	_, err := io.ReadFull(reader, message.Header[:])
-	if err !=nil{
+	if err != nil {
 		return err
 	}
 	lenData := poolUint32Data.Get().(*[]byte)
 	_, err = io.ReadFull(reader, *lenData)
-	if err!=nil{
+	if err != nil {
 		poolUint32Data.Put(lenData)
 		return err
 	}
 	l := binary.BigEndian.Uint32(*lenData)
 	poolUint32Data.Put(l)
 
-	if MaxMessageLength > 0 && int(l) > MaxMessageLength{
+	if MaxMessageLength > 0 && int(l) > MaxMessageLength {
 		return ErrMessageToLong
 	}
 
@@ -66,14 +212,14 @@ func (message *Message) Decode(reader io.Reader) error {
 	n = nEnd
 
 	// parse serviceMethod
-	l = binary.BigEndian.Uint32(data[n : n+4])
+	l = binary.BigEndian.Uint32(data[n: n+4])
 	n = n + 4
 	nEnd = n + int(l)
 	message.ServiceMethod = util.ByteToString(data[n:nEnd])
 	n = nEnd
 
 	// parse meta
-	l = binary.BigEndian.Uint32(data[n : n+4])
+	l = binary.BigEndian.Uint32(data[n: n+4])
 	n = n + 4
 	nEnd = n + int(l)
 
@@ -86,7 +232,7 @@ func (message *Message) Decode(reader io.Reader) error {
 	n = nEnd
 
 	// parse payload
-	l = binary.BigEndian.Uint32(data[n : n+4])
+	l = binary.BigEndian.Uint32(data[n: n+4])
 	_ = l
 	n = n + 4
 	message.Payload = data[n:]
@@ -100,24 +246,40 @@ func decodeMetadata(l uint32, data []byte) (map[string]string, error) {
 	for n < l {
 		// parse one key and value
 		// key
-		sl := binary.BigEndian.Uint32(data[n : n+4])
+		sl := binary.BigEndian.Uint32(data[n: n+4])
 		n = n + 4
 		if n+sl > l-4 {
 			return m, ErrMetaKVMissing
 		}
-		k := util.ByteToString(data[n : n+sl])
+		k := util.ByteToString(data[n: n+sl])
 		n = n + sl
 
 		// value
-		sl = binary.BigEndian.Uint32(data[n : n+4])
+		sl = binary.BigEndian.Uint32(data[n: n+4])
 		n = n + 4
 		if n+sl > l {
 			return m, ErrMetaKVMissing
 		}
-		v := util.ByteToString(data[n : n+sl])
+		v := util.ByteToString(data[n: n+sl])
 		n = n + sl
 		m[k] = v
 	}
 
 	return m, nil
+}
+
+func (m *Message) Reset() {
+	resetHeader(m.Header)
+	m.Metadata = nil
+	m.Payload = m.Payload[:0]
+	m.data = m.data[:0]
+	m.ServicePath = ""
+	m.ServiceMethod = ""
+}
+
+var zeroHeaderArray Header
+var zeroHeader = zeroHeaderArray[1:]
+
+func resetHeader(h *Header) {
+	copy(h[1:], zeroHeader)
 }

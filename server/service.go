@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 	"frpc/log"
 	"context"
+	"fmt"
 )
 
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
@@ -153,4 +154,26 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
 		methods[mname] = &methodType{method: method, ArgType: argType, ReplyType: replyType}
 	}
 	return methods
+}
+
+
+func (s *service) call(ctx context.Context, mtype *methodType, argv, replyv reflect.Value) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("internal error: %v", r)
+		}
+	}()
+	mtype.Lock()
+	mtype.numCalls++
+	mtype.Unlock()
+	function := mtype.method.Func
+	// Invoke the method, providing a new value for the reply.
+	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), argv, replyv})
+	// The return value for the method is an error.
+	errInter := returnValues[0].Interface()
+	if errInter != nil {
+		return errInter.(error)
+	}
+
+	return nil
 }

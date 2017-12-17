@@ -18,6 +18,11 @@ func GetMsgs() *Message {
 	return msgPool.Get().(*Message)
 }
 
+func FreeMsg(msg *Message) {
+	msg.Reset()
+	msgPool.Put(msg)
+}
+
 var poolUint32Data = sync.Pool{
 	New: func() interface{} {
 		data := make([]byte, 4)

@@ -1,2 +1,7 @@
 package: frpc
-import: []
+import:
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+- package: github.com/vmihailenco/msgpack
+  version: ^3.2.3

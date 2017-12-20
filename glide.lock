@@ -1,15 +1,40 @@
-hash: 8aa4f0022768d90d0a475b100129e3d6b5ea19a372fe250ff2b8cd2a92687fbd
-updated: 2017-11-26T15:01:20.44944+08:00
+hash: cc8d015e0bed81d55beccdb84a983fe652b0d7cf6e6e045e3eae13ec557fe4d0
+updated: 2017-12-20T19:20:01.83957+08:00
 imports:
 - name: github.com/fatih/color
   version: 570b54cabe6b8eb0bc2dfce68d964677d63b5260
+- name: github.com/golang/protobuf
+  version: 5a0f697c9ed9d68fef0116532c6e05cfeae00e55
+  subpackages:
+  - proto
 - name: github.com/mattn/go-colorable
   version: 5411d3eea5978e6cdc258b30de592b60df6aba96
   repo: https://github.com/mattn/go-colorable
 - name: github.com/mattn/go-isatty
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
   repo: https://github.com/mattn/go-isatty
-- name: golang.org/x/sys/unix
+- name: github.com/vmihailenco/msgpack
+  version: 40b1cac89761d843bbb96b8b27c746ba5937322a
+  subpackages:
+  - codes
+- name: golang.org/x/net
+  version: 66aacef3dd8a676686c7ae3716979581e8b03c47
+  subpackages:
+  - context
+- name: golang.org/x/sys
   version: e24f485414aeafb646f6fca458b0bf869c0880a1
   repo: https://go.googlesource.com/sys
+  subpackages:
+  - unix
+- name: google.golang.org/appengine
+  version: 5bee14b453b4c71be47ec1781b0fa61c2ea182db
+  subpackages:
+  - datastore
+  - internal
+  - internal/app_identity
+  - internal/base
+  - internal/datastore
+  - internal/log
+  - internal/modules
+  - internal/remote_api
 testImports: []

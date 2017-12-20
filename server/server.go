@@ -197,6 +197,12 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (resp
 	if err != nil {
 		return handleError(res, err)
 	}
+	data, err := codec.Encode(replyv.Interface())
+	if err != nil {
+		return handleError(res, err)
+	}
+	res.Payload = data
+
 	return res, nil
 }
 

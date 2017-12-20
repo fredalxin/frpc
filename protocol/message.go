@@ -74,6 +74,15 @@ type Message struct {
 	data          []byte
 }
 
+func NewMessage() *Message {
+	header := Header([12]byte{})
+	header[0] = magicNumber
+
+	return &Message{
+		Header: &header,
+	}
+}
+
 // CheckMagicNumber checks whether header starts rpcx magic number.
 func (h Header) CheckMagicNumber() bool {
 	return h[0] == magicNumber
@@ -171,7 +180,7 @@ func (h *Header) SetSeq(seq uint64) {
 func (m Message) Copy() *Message {
 	header := *m.Header
 	c := GetMsgs()
-	c.Header = header
+	c.Header = &header
 	c.ServicePath = m.ServicePath
 	c.ServiceMethod = m.ServiceMethod
 	return c

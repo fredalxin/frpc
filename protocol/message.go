@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"frpc/util"
+	"bytes"
 )
 
 const (
@@ -275,6 +276,53 @@ func decodeMetadata(l uint32, data []byte) (map[string]string, error) {
 	}
 
 	return m, nil
+}
+
+func (m *Message) Encode() []byte {
+	meta := encodeMetadata(m.Metadata)
+
+	spl := len(m.ServicePath)
+	sml := len(m.ServiceMethod)
+
+	allL := (4 + spl) + (4 + sml) + (4 + len(meta)) + (4 + len(m.Payload))
+	metaStart := 12 + 4 + (4 + spl) + (4 + sml)
+	payLoadStart := metaStart + (4 + len(meta))
+	l := 12 + 4 + allL
+	data := make([]byte, l)
+	copy(data, m.Header[:])
+
+	binary.BigEndian.PutUint32(data[12:16], uint32(allL))
+
+	binary.BigEndian.PutUint32(data[16:20], uint32(spl))
+	copy(data[20:20+spl], util.StringToByte(m.ServicePath))
+
+	binary.BigEndian.PutUint32(data[20+spl:24+spl], uint32(sml))
+	copy(data[24+spl:metaStart], util.StringToByte(m.ServiceMethod))
+
+	binary.BigEndian.PutUint32(data[metaStart:metaStart+4], uint32(len(meta)))
+	copy(data[metaStart+4:], meta)
+
+	binary.BigEndian.PutUint32(data[payLoadStart:payLoadStart+4], uint32(len(m.Payload)))
+	copy(data[payLoadStart+4:], m.Payload)
+
+	return data
+}
+
+func encodeMetadata(m map[string]string) []byte {
+	if len(m) == 0 {
+		return []byte{}
+	}
+	var buf bytes.Buffer
+	var d = make([]byte, 4)
+	for k, v := range m {
+		binary.BigEndian.PutUint32(d, uint32(len(k)))
+		buf.Write(d)
+		buf.Write(util.StringToByte(k))
+		binary.BigEndian.PutUint32(d, uint32(len(v)))
+		buf.Write(d)
+		buf.Write(util.StringToByte(v))
+	}
+	return buf.Bytes()
 }
 
 func (m *Message) Reset() {

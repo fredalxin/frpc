@@ -11,6 +11,7 @@ import (
 	"frpc/core"
 	"errors"
 	"io"
+	"context"
 )
 
 type ServiceError string
@@ -23,6 +24,8 @@ var (
 	ErrShutdown         = errors.New("connection is shut down")
 	ErrUnsupportedCodec = errors.New("unsupported codec")
 )
+
+type seqKey struct{}
 
 type Client struct {
 	option   Option
@@ -133,5 +136,192 @@ func (client *Client) handleResponse(reader io.Reader) {
 }
 
 func (client *Client) heartbeat() {
+	t := time.NewTicker(client.option.HeartbeatInterval)
+	for range t.C {
+		if client.shutdown || client.closing {
+			return
+		}
+		err := client.Call(context.Background(), "", "", nil, nil)
+		if err != nil {
+			log.Warnf("failed to heartbeat to %s", client.conn.RemoteAddr().String())
+		}
+	}
+}
 
+func (client *Client) Go(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}, done chan *Call) *Call {
+	call := new(Call)
+	call.ServicePath = servicePath
+	call.ServiceMethod = serviceMethod
+	meta := ctx.Value(core.ReqMetaDataKey)
+	if meta != nil {
+		call.Metadata = meta.(map[string]string)
+	}
+	call.Args = args
+	call.Reply = reply
+	if done == nil {
+		//buffer
+		done = make(chan *Call, 10)
+	} else {
+		if cap(done) == 0 {
+			log.Panic("rpc: done channel is unbuffered")
+		}
+	}
+	call.Done = done
+	client.send(ctx, call)
+	return call
+}
+
+func (client *Client) Call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
+	//熔断 待开发
+	return client.call(ctx, servicePath, serviceMethod, args, reply)
+}
+
+func (client *Client) call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
+	seq := new(uint64)
+	context.WithValue(ctx, seqKey{}, seq)
+	Done := client.Go(ctx, servicePath, serviceMethod, args, reply, make(chan *Call, 1)).Done
+	var err error
+	select {
+	case <-ctx.Done():
+		client.mutex.Lock()
+		call := client.pending[*seq]
+		delete(client.pending, *seq)
+		client.mutex.Unlock()
+		if call != nil {
+			call.Error = ctx.Err()
+			call.done()
+		}
+		return ctx.Err()
+	case call := <-Done:
+		err = call.Error
+		meta := ctx.Value(core.ResMetaDataKey)
+		if meta != nil && len(call.ResMetadata) > 0 {
+			resMeta := meta.(map[string]string)
+			for k, v := range call.ResMetadata {
+				resMeta[k] = v
+			}
+		}
+	}
+	return err
+}
+
+func (client *Client) send(ctx context.Context, call *Call) {
+	//client.reqMutex.Lock()
+	//defer client.reqMutex.Unlock()
+	//
+	//// Register this call.
+	//client.mutex.Lock()
+	//if client.shutdown || client.closing {
+	//	call.Error = ErrShutdown
+	//	client.mutex.Unlock()
+	//	call.done()
+	//	return
+	//}
+	////pending使用map实现的，rpc请求都会生存一个唯一递增的seq, seq就是用来标记请求的，这个很像tcp包的seq
+	//
+	//seq := client.seq
+	//client.seq++
+	//client.pending[seq] = call
+	//client.mutex.Unlock()
+	//
+	//// Encode and send the request.
+	//client.request.Seq = seq
+	//client.request.ServiceMethod = call.ServiceMethod
+	//err := client.codec.WriteRequest(&client.request, call.Args)
+	//if err != nil {
+	//	client.mutex.Lock()
+	//	call = client.pending[seq]
+	//	delete(client.pending, seq)
+	//	client.mutex.Unlock()
+	//	if call != nil {
+	//		call.Error = err
+	//		call.done()
+	//	}
+	//}
+	client.mutex.Lock()
+	if client.shutdown || client.closing {
+		call.Error = ErrShutdown
+		client.mutex.Unlock()
+		call.done()
+		return
+	}
+
+	codec := core.Codecs[client.option.SerializeType]
+	if codec == nil {
+		call.Error = ErrUnsupportedCodec
+		client.mutex.Unlock()
+		call.done()
+		return
+	}
+
+	if client.pending == nil {
+		client.pending = make(map[uint64]*Call)
+	}
+	seq := client.seq
+	client.seq++
+	client.pending[seq] = call
+	client.mutex.Unlock()
+
+	if cseq, ok := ctx.Value(seqKey{}).(*uint64); ok {
+		*cseq = seq
+	}
+
+	req := protocol.GetMsgs()
+	req.SetMessageType(protocol.Request)
+	req.SetSeq(seq)
+
+	if call.ServicePath == "" && call.ServiceMethod == "" {
+		req.SetHeartbeat(true)
+	} else {
+		req.SetSerializeType(client.option.SerializeType)
+		if call.Metadata != nil {
+			req.Metadata = call.Metadata
+		}
+
+		req.ServicePath = call.ServicePath
+		req.ServiceMethod = call.ServiceMethod
+
+		data, err := codec.Encode(call.Args)
+		if err != nil {
+			call.Error = err
+			call.done()
+			return
+		}
+		if len(data) > 1024 && client.option.CompressType == protocol.Gzip {
+			data, err = util.Zip(data)
+			if err != nil {
+				call.Error = err
+				call.done()
+				return
+			}
+
+			req.SetCompressType(client.option.CompressType)
+		}
+		req.Payload = data
+	}
+
+	data := req.Encode()
+
+	_, err := client.conn.Write(data)
+	if err != nil {
+		client.mutex.Lock()
+		call = client.pending[seq]
+		delete(client.pending, seq)
+		client.mutex.Unlock()
+		if call != nil {
+			call.Error = err
+			call.done()
+		}
+	}
+	protocol.FreeMsg(req)
+
+	if req.IsOneway() {
+		client.mutex.Lock()
+		call = client.pending[seq]
+		delete(client.pending, seq)
+		client.mutex.Unlock()
+		if call != nil {
+			call.done()
+		}
+	}
 }

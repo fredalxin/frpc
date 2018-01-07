@@ -193,14 +193,15 @@ func (message *Message) Decode(reader io.Reader) error {
 	if err != nil {
 		return err
 	}
-	lenData := poolUint32Data.Get().(*[]byte)
+	p := poolUint32Data.Get()
+	lenData := p.(*[]byte)
 	_, err = io.ReadFull(reader, *lenData)
 	if err != nil {
 		poolUint32Data.Put(lenData)
 		return err
 	}
 	l := binary.BigEndian.Uint32(*lenData)
-	poolUint32Data.Put(l)
+	poolUint32Data.Put(lenData)
 
 	if MaxMessageLength > 0 && int(l) > MaxMessageLength {
 		return ErrMessageToLong

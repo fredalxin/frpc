@@ -53,6 +53,6 @@ func TestClient(t *testing.T) {
 		t.Fatalf("expect 200 but got %d", reply.C)
 	}
 
-	t.Logf("get res:", reply.C)
+	println(reply.C)
 
 }

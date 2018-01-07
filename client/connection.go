@@ -68,5 +68,9 @@ func newDirectConn(client *Client, network string, address string) (net.Conn, er
 		log.Errorf("failed to dial server: %v", err)
 		return nil, err
 	}
+	if tc, ok := conn.(*net.TCPConn); ok {
+		tc.SetKeepAlive(true)
+		tc.SetKeepAlivePeriod(3 * time.Minute)
+	}
 	return conn, nil
 }

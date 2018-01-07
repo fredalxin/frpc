@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"frpc/core"
 	"fmt"
+	"runtime"
 )
 
 var ErrServerClosed = errors.New("http: Server closed")
@@ -33,6 +34,14 @@ type Server struct {
 	activeConn   map[net.Conn]struct{}
 	readTimeout  time.Duration
 	writeTimeout time.Duration
+	//待开发 option plugin
+}
+
+func NewServer() *Server {
+	s := &Server{
+		//待开发
+	}
+	return s
 }
 
 func (s *Server) Serve(network, address string) (err error) {
@@ -42,6 +51,21 @@ func (s *Server) Serve(network, address string) (err error) {
 		return
 	}
 	return s.serveListener(ln)
+}
+
+func (s *Server) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.closeDoneChanLocked()
+	var err error
+	if s.ln != nil {
+		err = s.ln.Close()
+	}
+	for c := range s.activeConn {
+		c.Close()
+		delete(s.activeConn, c)
+	}
+	return err
 }
 
 func (s *Server) serveListener(ln net.Listener) error {
@@ -93,17 +117,25 @@ func (s *Server) serveListener(ln net.Listener) error {
 	}
 }
 
-func (s *Server) getDoneChan() <-chan struct{} {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.doneChan == nil {
-		s.doneChan = make(chan struct{})
-	}
-	return s.doneChan
-}
-
 func (server *Server) ServeConn(conn net.Conn) {
+	defer func() {
+		if err := recover(); err != nil {
+			//println("err:",err)
+			const size = 64 << 10
+			buf := make([]byte, size)
+			ss := runtime.Stack(buf, false)
+			if ss > size {
+				ss = size
+			}
+			buf = buf[:ss]
+			log.Errorf("serving %s panic error: %s, stack:\n %s", conn.RemoteAddr(), err, buf)
+		}
+		server.mu.Lock()
+		delete(server.activeConn, conn)
+		server.mu.Unlock()
+		conn.Close()
+	}()
+
 	r := bufio.NewReaderSize(conn, ReaderBuffsize)
 	for {
 		t := time.Now()
@@ -128,11 +160,41 @@ func (server *Server) ServeConn(conn net.Conn) {
 			if err != nil {
 				log.Warnf("rpcx: failed to handle request: %v", err)
 			}
+
+			data := res.Encode()
+			conn.Write(data)
+
 			protocol.FreeMsg(req)
 			protocol.FreeMsg(res)
 		}()
 
 	}
+}
+
+func (s *Server) getDoneChan() <-chan struct{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.doneChan == nil {
+		s.doneChan = make(chan struct{})
+	}
+	return s.doneChan
+}
+
+func (s *Server) closeDoneChanLocked() {
+	ch := s.getDoneChanLocked()
+	select {
+	case <-ch:
+	default:
+		close(ch)
+	}
+}
+
+func (s *Server) getDoneChanLocked() chan struct{} {
+	if s.doneChan == nil {
+		s.doneChan = make(chan struct{})
+	}
+	return s.doneChan
 }
 
 func (s *Server) decodeRequest(ctx context.Context, r io.Reader) (req *protocol.Message, err error) {

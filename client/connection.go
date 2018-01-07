@@ -36,8 +36,8 @@ func (c *Client) Connect(network, address string) error {
 			conn.SetWriteDeadline(time.Now().Add(c.option.WriteTimeout))
 		}
 		c.conn = conn
-		reader := bufio.NewReaderSize(conn, ReaderBuffsize)
-		go c.handleResponse(reader)
+		c.r = bufio.NewReaderSize(conn, ReaderBuffsize)
+		go c.handleResponse()
 
 		if c.option.Heartbeat && c.option.HeartbeatInterval > 0 {
 			go c.heartbeat()

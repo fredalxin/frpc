@@ -39,6 +39,12 @@ type Client struct {
 	shutdown bool // server has told us to stop
 }
 
+func NewClient(option Option) *Client {
+	return &Client{
+		option: option,
+	}
+}
+
 type Option struct {
 	SerializeType     protocol.SerializeType
 	CompressType      protocol.CompressType
@@ -47,6 +53,12 @@ type Option struct {
 	ConnTimeout       time.Duration
 	Heartbeat         bool
 	HeartbeatInterval time.Duration
+}
+
+var DefaultOption = Option{
+	ConnTimeout:   10 * time.Second,
+	SerializeType: protocol.MsgPack,
+	CompressType:  protocol.None,
 }
 
 type Call struct {
@@ -70,11 +82,11 @@ func (call *Call) done() {
 	}
 }
 
-func (client *Client) handleResponse(reader io.Reader) {
+func (client *Client) handleResponse() {
 	var err error
 	var res = protocol.NewMessage()
 	for err == nil {
-		err := res.Decode(reader)
+		err := res.Decode(client.r)
 		if err != nil {
 			break
 		}
@@ -206,38 +218,6 @@ func (client *Client) call(ctx context.Context, servicePath, serviceMethod strin
 }
 
 func (client *Client) send(ctx context.Context, call *Call) {
-	//client.reqMutex.Lock()
-	//defer client.reqMutex.Unlock()
-	//
-	//// Register this call.
-	//client.mutex.Lock()
-	//if client.shutdown || client.closing {
-	//	call.Error = ErrShutdown
-	//	client.mutex.Unlock()
-	//	call.done()
-	//	return
-	//}
-	////pending使用map实现的，rpc请求都会生存一个唯一递增的seq, seq就是用来标记请求的，这个很像tcp包的seq
-	//
-	//seq := client.seq
-	//client.seq++
-	//client.pending[seq] = call
-	//client.mutex.Unlock()
-	//
-	//// Encode and send the request.
-	//client.request.Seq = seq
-	//client.request.ServiceMethod = call.ServiceMethod
-	//err := client.codec.WriteRequest(&client.request, call.Args)
-	//if err != nil {
-	//	client.mutex.Lock()
-	//	call = client.pending[seq]
-	//	delete(client.pending, seq)
-	//	client.mutex.Unlock()
-	//	if call != nil {
-	//		call.Error = err
-	//		call.done()
-	//	}
-	//}
 	client.mutex.Lock()
 	if client.shutdown || client.closing {
 		call.Error = ErrShutdown
@@ -324,4 +304,24 @@ func (client *Client) send(ctx context.Context, call *Call) {
 			call.done()
 		}
 	}
+
+}
+
+func (client *Client) Close() error {
+	client.mutex.Lock()
+	for seq, call := range client.pending {
+		if call != nil {
+			call.Error = ErrShutdown
+			call.done()
+		}
+		delete(client.pending, seq)
+	}
+
+	if client.closing || client.shutdown {
+		client.mutex.Unlock()
+		return ErrShutdown
+	}
+	client.closing = true
+	client.mutex.Unlock()
+	return client.conn.Close()
 }

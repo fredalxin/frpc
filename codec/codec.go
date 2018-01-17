@@ -2,7 +2,6 @@ package codec
 
 import (
 	"fmt"
-	"reflect"
 	"encoding/json"
 	pb "github.com/golang/protobuf/proto"
 	mp "github.com/vmihailenco/msgpack"
@@ -11,21 +10,6 @@ import (
 type Codec interface {
 	Encode(i interface{}) ([]byte, error)
 	Decode(data []byte, i interface{}) error
-}
-
-type ByteCodec struct {
-}
-
-func (c ByteCodec) Encode(i interface{}) ([]byte, error) {
-	if data, ok := i.([]byte); ok {
-		return data, nil
-	}
-	return nil, fmt.Errorf("%T is not a []byte", i)
-}
-
-func (c ByteCodec) Decode(data []byte, i interface{}) error {
-	reflect.ValueOf(i).SetBytes(data)
-	return nil
 }
 
 // JSONCodec uses json marshaler and unmarshaler.

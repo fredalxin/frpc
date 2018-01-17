@@ -14,6 +14,7 @@ import (
 	"frpc/core"
 	"fmt"
 	"runtime"
+	"net/http"
 )
 
 var ErrServerClosed = errors.New("http: Server closed")
@@ -49,6 +50,10 @@ func (s *Server) Serve(network, address string) (err error) {
 	ln, err = s.makeListener(network, address)
 	if err != nil {
 		return
+	}
+	if network == "http" {
+		s.serveHTTPListner(ln, "")
+		return nil
 	}
 	return s.serveListener(ln)
 }
@@ -113,11 +118,52 @@ func (s *Server) serveListener(ln net.Listener) error {
 		s.activeConn[conn] = struct{}{}
 		s.mu.Unlock()
 
-		go s.ServeConn(conn)
+		go s.serveConn(conn)
 	}
 }
 
-func (server *Server) ServeConn(conn net.Conn) {
+func (s *Server) serveHTTPListner(ln net.Listener, rpcPath string) {
+	s.ln = ln
+
+	if rpcPath == "" {
+		rpcPath = core.DefaultRPCPath
+	}
+	http.Handle(rpcPath, s)
+	srv := &http.Server{Handler: nil}
+
+	s.mu.Lock()
+	if s.activeConn == nil {
+		s.activeConn = make(map[net.Conn]struct{})
+	}
+	s.mu.Unlock()
+
+	srv.Serve(ln)
+}
+
+var connected = "200 Connected to frpc"
+
+//http.Handler的实现
+func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "CONNECT" {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		io.WriteString(w, "405 must CONNECT\n")
+		return
+	}
+	conn, _, err := w.(http.Hijacker).Hijack()
+	if err != nil {
+		log.Info("rpc hijacking ", req.RemoteAddr, ": ", err.Error())
+		return
+	}
+	io.WriteString(conn, "HTTP/1.0 "+connected+"\n\n")
+
+	s.mu.Lock()
+	s.activeConn[conn] = struct{}{}
+	s.mu.Unlock()
+	s.serveConn(conn)
+}
+
+func (server *Server) serveConn(conn net.Conn) {
 	defer func() {
 		if err := recover(); err != nil {
 			//println("err:",err)
@@ -267,6 +313,7 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (resp
 
 	return res, nil
 }
+
 
 func handleError(res *protocol.Message, err error) (*protocol.Message, error) {
 	res.SetMessageStatusType(protocol.Error)

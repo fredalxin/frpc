@@ -53,6 +53,7 @@ type Option struct {
 	ConnTimeout       time.Duration
 	Heartbeat         bool
 	HeartbeatInterval time.Duration
+	RPCPath string
 }
 
 var DefaultOption = Option{

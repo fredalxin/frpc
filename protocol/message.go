@@ -45,13 +45,11 @@ const (
 type SerializeType byte
 
 const (
-	// SerializeNone uses raw []byte and don't serialize/deserialize
-	SerializeNone SerializeType = iota
-	// JSON for payload.
-	JSON
-	// ProtoBuffer for payload.
+	// Json
+	JSON SerializeType = iota
+	// ProtoBuffer
 	ProtoBuffer
-	// MsgPack for payload
+	// MsgPack
 	MsgPack
 )
 

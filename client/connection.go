@@ -5,6 +5,10 @@ import (
 	"time"
 	"bufio"
 	"frpc/log"
+	"io"
+	"net/http"
+	"errors"
+	"frpc/core"
 )
 
 const (
@@ -46,14 +50,37 @@ func (c *Client) Connect(network, address string) error {
 	return err
 }
 
+var connected = "200 Connected to frpc"
+
 func newHttpConn(client *Client, network string, address string) (net.Conn, error) {
+	path := client.option.RPCPath
+	if path == "" {
+		path = core.DefaultRPCPath
+	}
 	conn, err := net.DialTimeout("tcp", address, client.option.ConnTimeout)
 	if err != nil {
 		log.Errorf("failed to dial server: %v", err)
 		return nil, err
 	}
-	//io.WriteString(conn, "CONNECT "+path+" HTTP/1.0\n\n"
-	return conn, nil
+	io.WriteString(conn, "CONNECT "+path+" HTTP/1.0\n\n")
+
+	// Require successful HTTP response
+	// before switching to RPC protocol.
+	resp, err := http.ReadResponse(bufio.NewReader(conn), &http.Request{Method: "CONNECT"})
+	if err == nil && resp.Status == connected {
+		return conn, nil
+	}
+	if err == nil {
+		log.Errorf("unexpected HTTP response: %v", err)
+		err = errors.New("unexpected HTTP response: " + resp.Status)
+	}
+	conn.Close()
+	return nil, &net.OpError{
+		Op:   "dial-http",
+		Net:  network + " " + address,
+		Addr: nil,
+		Err:  err,
+	}
 }
 func newKcpConn(client *Client, network string, address string) (net.Conn, error) {
 	panic(client)

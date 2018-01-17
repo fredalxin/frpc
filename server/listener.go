@@ -9,6 +9,7 @@ var makeListeners = make(map[string]MakeListener)
 
 func init() {
 	makeListeners["tcp"] = makeTcpListener
+	makeListeners["http"] = makeTcpListener
 }
 
 type MakeListener func(s *Server, address string) (ln net.Listener, err error)

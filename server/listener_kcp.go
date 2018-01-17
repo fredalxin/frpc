@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-func makeQuicListener(s *Server, address string) (ln net.Listener, err error) {
-	return nil, errors.New("quic unsupported")
+func makeKcpListener(s *Server, address string) (ln net.Listener, err error) {
+	return nil, errors.New("kcp unsupported")
 }
 

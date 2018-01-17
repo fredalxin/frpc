@@ -61,11 +61,12 @@ func TestCodecClient(t *testing.T) {
 func TestHttpClient(t *testing.T) {
 	s := server.NewServer()
 	s.RegisterName(new(Arith), "Arith")
-	go s.Serve("http", "127.0.0.1:8080")
+	go s.ServePath("http", "127.0.0.1:8080", "testPath")
 	defer s.Close()
 	time.Sleep(500 * time.Millisecond)
 
 	c := NewClient(DefaultOption)
+	c.option.RPCPath = "testPath"
 	err := c.Connect("http", "127.0.0.1:8080")
 	if err != nil {
 		t.Fatalf("failed to connect:v%", err)

@@ -46,13 +46,17 @@ func NewServer() *Server {
 }
 
 func (s *Server) Serve(network, address string) (err error) {
+	return s.ServePath(network, address, "")
+}
+
+func (s *Server) ServePath(network, address string, rpcPath string) (err error) {
 	var ln net.Listener
 	ln, err = s.makeListener(network, address)
 	if err != nil {
 		return
 	}
 	if network == "http" {
-		s.serveHTTPListner(ln, "")
+		s.serveHTTPListner(ln, rpcPath)
 		return nil
 	}
 	return s.serveListener(ln)
@@ -313,7 +317,6 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (resp
 
 	return res, nil
 }
-
 
 func handleError(res *protocol.Message, err error) (*protocol.Message, error) {
 	res.SetMessageStatusType(protocol.Error)

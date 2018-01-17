@@ -52,6 +52,7 @@ func (c *Client) Connect(network, address string) error {
 
 var connected = "200 Connected to frpc"
 
+//http实现
 func newHttpConn(client *Client, network string, address string) (net.Conn, error) {
 	path := client.option.RPCPath
 	if path == "" {
@@ -82,13 +83,8 @@ func newHttpConn(client *Client, network string, address string) (net.Conn, erro
 		Err:  err,
 	}
 }
-func newKcpConn(client *Client, network string, address string) (net.Conn, error) {
-	panic(client)
-}
-func newQuicConn(client *Client, network string, address string) (net.Conn, error) {
-	panic(client)
-}
 
+//tcp unix等
 func newDirectConn(client *Client, network string, address string) (net.Conn, error) {
 	conn, err := net.DialTimeout(network, address, client.option.ConnTimeout)
 	if err != nil {

@@ -33,16 +33,14 @@ type Server struct {
 	doneChan     chan struct{}
 	ln           net.Listener
 	activeConn   map[net.Conn]struct{}
-	readTimeout  time.Duration
-	writeTimeout time.Duration
+	//readTimeout  time.Duration
+	//writeTimeout time.Duration
 	//待开发 option plugin
+	option Option
 }
 
 func NewServer() *Server {
-	s := &Server{
-		//待开发
-	}
-	return s
+	return &Server{}
 }
 
 func (s *Server) Serve(network, address string) (err error) {
@@ -189,6 +187,10 @@ func (server *Server) serveConn(conn net.Conn) {
 	r := bufio.NewReaderSize(conn, ReaderBuffsize)
 	for {
 		t := time.Now()
+		//timeout
+		if server.option.ReadTimeout != 0 {
+			conn.SetReadDeadline(t.Add(server.option.WriteTimeout))
+		}
 		//decode request
 		req, err := server.decodeRequest(context.Background(), r)
 		if err != nil {
@@ -200,8 +202,8 @@ func (server *Server) serveConn(conn net.Conn) {
 			return
 		}
 		//timeout
-		if server.writeTimeout != 0 {
-			conn.SetWriteDeadline(t.Add(server.writeTimeout))
+		if server.option.WriteTimeout != 0 {
+			conn.SetWriteDeadline(t.Add(server.option.WriteTimeout))
 		}
 
 		//handle request

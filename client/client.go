@@ -7,7 +7,7 @@ import (
 	"time"
 	"net"
 	"frpc/log"
-	"rpcx/util"
+	"frpc/util"
 	"frpc/core"
 	"errors"
 	"io"
@@ -39,27 +39,15 @@ type Client struct {
 	shutdown bool // server has told us to stop
 }
 
-func NewClient(option Option) *Client {
-	return &Client{
-		option: option,
-	}
+func NewClient() *Client {
+	return newClient().
+		ConnTimeout(10 * time.Second).
+		Serialize(protocol.MsgPack).
+		Compress(protocol.None)
 }
 
-type Option struct {
-	SerializeType     protocol.SerializeType
-	CompressType      protocol.CompressType
-	ReadTimeout       time.Duration
-	WriteTimeout      time.Duration
-	ConnTimeout       time.Duration
-	Heartbeat         bool
-	HeartbeatInterval time.Duration
-	RPCPath string
-}
-
-var DefaultOption = Option{
-	ConnTimeout:   10 * time.Second,
-	SerializeType: protocol.MsgPack,
-	CompressType:  protocol.None,
+func newClient() *Client {
+	return &Client{}
 }
 
 type Call struct {
@@ -92,10 +80,14 @@ func (client *Client) handleResponse() {
 			break
 		}
 		seq := res.Seq()
-		client.mutex.Lock()
-		call := client.pending[seq]
-		delete(client.pending, seq)
-		client.mutex.Unlock()
+		var call *Call
+		isCommonMessage := (res.MessageType() == protocol.Request && !res.IsHeartbeat() && res.IsOneway())
+		if !isCommonMessage {
+			client.mutex.Lock()
+			call = client.pending[seq]
+			delete(client.pending, seq)
+			client.mutex.Unlock()
+		}
 
 		switch {
 		case call == nil:

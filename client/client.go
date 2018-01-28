@@ -67,7 +67,7 @@ func (call *Call) done() {
 	case call.Done <- call:
 		// ok
 	default:
-		log.Debug("rpc: discarding Call reply due to insufficient Done chan capacity")
+		log.Debug("frpc: discarding Call reply due to insufficient Done chan capacity")
 	}
 }
 
@@ -75,7 +75,7 @@ func (client *Client) handleResponse() {
 	var err error
 	var res = protocol.NewMessage()
 	for err == nil {
-		err := res.Decode(client.r)
+		err = res.Decode(client.r)
 		if err != nil {
 			break
 		}
@@ -102,8 +102,8 @@ func (client *Client) handleResponse() {
 				if res.CompressType() == protocol.Gzip {
 					data, err = util.Unzip(data)
 					if err != nil {
+						call.Error = ServiceError("unzip payload: " + err.Error())
 					}
-					call.Error = ServiceError("unzip payload: " + err.Error())
 				}
 				codec := core.Codecs[res.SerializeType()]
 				if codec == nil {
@@ -136,7 +136,7 @@ func (client *Client) handleResponse() {
 	}
 	client.mutex.Unlock()
 	if err != nil && err != io.EOF && !closing {
-		log.Error("rpcx: client protocol error:", err)
+		log.Error("frpc: client protocol error:", err)
 	}
 }
 
@@ -168,7 +168,7 @@ func (client *Client) Go(ctx context.Context, servicePath, serviceMethod string,
 		done = make(chan *Call, 10)
 	} else {
 		if cap(done) == 0 {
-			log.Panic("rpc: done channel is unbuffered")
+			log.Panic("frpc: done channel is unbuffered")
 		}
 	}
 	call.Done = done

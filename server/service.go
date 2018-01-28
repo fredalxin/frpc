@@ -53,12 +53,12 @@ func (s *Server) register(rcvr interface{}, name string, useName bool) error {
 		sname = reflect.Indirect(service.rcvr).Type().Name()
 	}
 	if sname == "" {
-		errorStr := "rpc.Register: no service name for type " + service.typ.String()
+		errorStr := "frpc.Register: no service name for type " + service.typ.String()
 		log.Error(errorStr)
 		return errors.New(errorStr)
 	}
 	if !useName && !isExported(sname) {
-		errorStr := "rpcx.Register: type " + sname + " is not exported"
+		errorStr := "frpc.Register: type " + sname + " is not exported"
 		log.Error(errorStr)
 		return errors.New(errorStr)
 	}
@@ -67,7 +67,7 @@ func (s *Server) register(rcvr interface{}, name string, useName bool) error {
 	//deal method
 	service.method = suitableMethods(service.typ, true)
 	if len(service.method) == 0{
-		errorStr := "rpcx.Register: type " + sname + " has no exported methods of suitable type"
+		errorStr := "frpc.Register: type " + sname + " has no exported methods of suitable type"
 		log.Error(errorStr)
 		return errors.New(errorStr)
 	}

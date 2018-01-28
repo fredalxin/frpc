@@ -104,7 +104,7 @@ func (s *Server) serveListener(ln net.Listener) error {
 					tempDelay = max
 				}
 
-				log.Errorf("rpcx: Accept error: %v; retrying in %v", err, tempDelay)
+				log.Errorf("frpc: Accept error: %v; retrying in %v", err, tempDelay)
 				time.Sleep(tempDelay)
 				continue
 			}
@@ -192,7 +192,8 @@ func (server *Server) serveConn(conn net.Conn) {
 			conn.SetReadDeadline(t.Add(server.option.WriteTimeout))
 		}
 		//decode request
-		req, err := server.decodeRequest(context.Background(), r)
+		ctx := context.Background()
+		req, err := server.decodeRequest(ctx, r)
 		if err != nil {
 			req = nil
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
@@ -205,12 +206,21 @@ func (server *Server) serveConn(conn net.Conn) {
 		if server.option.WriteTimeout != 0 {
 			conn.SetWriteDeadline(t.Add(server.option.WriteTimeout))
 		}
-
 		//handle request
 		go func() {
-			res, err := server.handleRequest(context.Background(), req)
+			if req.IsHeartbeat() {
+				req.SetMessageType(protocol.Response)
+				data := req.Encode()
+				conn.Write(data)
+				return
+			}
+			resMetadata := make(map[string]string)
+			newCtx := context.WithValue(context.WithValue(ctx, core.ReqMetaDataKey, req.Metadata),
+				core.ResMetaDataKey, resMetadata)
+
+			res, err := server.handleRequest(newCtx, req)
 			if err != nil {
-				log.Warnf("rpcx: failed to handle request: %v", err)
+				log.Warnf("frpc: failed to handle request: %v", err)
 			}
 
 			data := res.Encode()
@@ -269,13 +279,13 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (resp
 	s.serviceMapMu.RUnlock()
 
 	if service == nil {
-		err = errors.New("rpcx: can't find service " + serviceName)
+		err = errors.New("frpc: can't find service " + serviceName)
 		return handleError(res, err)
 	}
 
 	mtype := service.method[methodName]
 	if mtype == nil {
-		err = errors.New("rpcx: can't find method " + methodName)
+		err = errors.New("frpc: can't find method " + methodName)
 		return handleError(res, err)
 	}
 

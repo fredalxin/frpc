@@ -14,7 +14,7 @@ const (
 
 const (
 	// ServiceError contains error info of service invocation
-	ServiceError = "__rpcx_error__"
+	ServiceError = "__frpc_error__"
 )
 
 type MessageType byte

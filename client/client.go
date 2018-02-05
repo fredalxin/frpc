@@ -41,7 +41,7 @@ type Client struct {
 
 func NewClient() *Client {
 	return newClient().
-		ConnTimeout(10 * time.Second).
+		ConnTimeout(1000 * time.Second).
 		Serialize(protocol.MsgPack).
 		Compress(protocol.None)
 }

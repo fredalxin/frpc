@@ -223,6 +223,17 @@ func (server *Server) serveConn(conn net.Conn) {
 				log.Warnf("frpc: failed to handle request: %v", err)
 			}
 
+			if len(resMetadata) > 0 { //copy meta in context to request
+				meta := res.Metadata
+				if meta == nil {
+					res.Metadata = resMetadata
+				} else {
+					for k, v := range resMetadata {
+						meta[k] = v
+					}
+				}
+			}
+
 			data := res.Encode()
 			conn.Write(data)
 

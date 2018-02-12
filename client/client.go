@@ -91,10 +91,20 @@ func (client *Client) handleResponse() {
 
 		switch {
 		case call == nil:
+			if isCommonMessage {
+				//if client.ServerMessageChan != nil {
+				//	go client.handleServerRequest(res)
+				//}
+				continue
+			}
 		case res.MessageStatusType() == protocol.Error:
 			call.Error = ServiceError(res.Metadata[protocol.ServiceError])
 			call.ResMetadata = res.Metadata
 			//
+			call.done()
+		case res.IsHeartbeat():
+			log.Info("client receive heartbeat from server")
+			call.ResMetadata = res.Metadata
 			call.done()
 		default:
 			data := res.Payload
@@ -115,6 +125,7 @@ func (client *Client) handleResponse() {
 					}
 				}
 			}
+
 			call.ResMetadata = res.Metadata
 			call.done()
 		}
@@ -146,6 +157,7 @@ func (client *Client) heartbeat() {
 		if client.shutdown || client.closing {
 			return
 		}
+		log.Info("client heartbeat")
 		err := client.Call(context.Background(), "", "", nil, nil)
 		if err != nil {
 			log.Warnf("failed to heartbeat to %s", client.conn.RemoteAddr().String())

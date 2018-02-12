@@ -141,7 +141,6 @@ func TestTimeout(t *testing.T) {
 	doCallPath(t, c, "TimeoutArith", args, reply)
 }
 
-
 func TestMetaData(t *testing.T) {
 	s := server.NewServer()
 	s.RegisterName(new(MetaDataArith), "MetaDataArith")
@@ -171,6 +170,37 @@ func TestMetaData(t *testing.T) {
 	fmt.Println("client received meta:", resMetaData)
 }
 
+func TestHeartBeat(t *testing.T) {
+	s := server.NewServer()
+	s.RegisterName(new(Arith), "Arith")
+	go s.Serve("tcp", "127.0.0.1:8080")
+	defer s.Close()
+	time.Sleep(500 * time.Millisecond)
+	c := NewClient().Heartbeat(true, time.Second)
+	//c :=NewClient()
+	err := c.Connect("tcp", "127.0.0.1:8080")
+	if err != nil {
+		t.Fatalf("failed to connect:v%", err)
+	}
+	defer c.Close()
+
+	args, reply := initParam()
+	err = c.Call(context.Background(), "Arith", "Mul", args, reply)
+	println(reply.C)
+
+	time.Sleep(10*time.Minute)
+
+	//for i:=0;i<10;i++{
+	//	args, reply := initParam()
+	//	err = c.Call(context.Background(), "Arith", "Mul", args, reply)
+	//	if err != nil {
+	//		t.Fatalf("failed to call: %v", err)
+	//	}
+	//	fmt.Printf("%d * %d = %d", args.A, args.B, reply.C)
+	//
+	//	time.Sleep(5*time.Second)
+	//}
+}
 
 func initServer() *server.Server {
 	s := server.NewServer()

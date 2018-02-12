@@ -209,6 +209,7 @@ func (server *Server) serveConn(conn net.Conn) {
 		//handle request
 		go func() {
 			if req.IsHeartbeat() {
+				log.Info("server receive heartbeat")
 				req.SetMessageType(protocol.Response)
 				data := req.Encode()
 				conn.Write(data)

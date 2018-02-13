@@ -33,13 +33,15 @@ type Server struct {
 	doneChan     chan struct{}
 	ln           net.Listener
 	activeConn   map[net.Conn]struct{}
-	//readTimeout  time.Duration
-	//writeTimeout time.Duration
 	//待开发 option plugin
 	option Option
 }
 
 func NewServer() *Server {
+	return newServer()
+}
+
+func newServer() *Server {
 	return &Server{}
 }
 
@@ -189,9 +191,10 @@ func (server *Server) serveConn(conn net.Conn) {
 		t := time.Now()
 		//timeout
 		if server.option.ReadTimeout != 0 {
-			conn.SetReadDeadline(t.Add(server.option.WriteTimeout))
+			conn.SetReadDeadline(t.Add(server.option.ReadTimeout))
 		}
 		//decode request
+		//可以加一些信息context
 		ctx := context.Background()
 		req, err := server.decodeRequest(ctx, r)
 		if err != nil {
@@ -223,20 +226,20 @@ func (server *Server) serveConn(conn net.Conn) {
 			if err != nil {
 				log.Warnf("frpc: failed to handle request: %v", err)
 			}
-
-			if len(resMetadata) > 0 { //copy meta in context to request
-				meta := res.Metadata
-				if meta == nil {
-					res.Metadata = resMetadata
-				} else {
-					for k, v := range resMetadata {
-						meta[k] = v
+			if !req.IsOneway() {
+				if len(resMetadata) > 0 { //copy meta in context to request
+					meta := res.Metadata
+					if meta == nil {
+						res.Metadata = resMetadata
+					} else {
+						for k, v := range resMetadata {
+							meta[k] = v
+						}
 					}
 				}
+				data := res.Encode()
+				conn.Write(data)
 			}
-
-			data := res.Encode()
-			conn.Write(data)
 
 			protocol.FreeMsg(req)
 			protocol.FreeMsg(res)

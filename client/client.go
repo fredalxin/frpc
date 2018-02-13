@@ -81,8 +81,8 @@ func (client *Client) handleResponse() {
 		}
 		seq := res.Seq()
 		var call *Call
-		isCommonMessage := (res.MessageType() == protocol.Request && !res.IsHeartbeat() && res.IsOneway())
-		if !isCommonMessage {
+		isServerMessage := (res.MessageType() == protocol.Request && !res.IsHeartbeat() && res.IsOneway())
+		if !isServerMessage {
 			client.mutex.Lock()
 			call = client.pending[seq]
 			delete(client.pending, seq)
@@ -91,7 +91,7 @@ func (client *Client) handleResponse() {
 
 		switch {
 		case call == nil:
-			if isCommonMessage {
+			if isServerMessage {
 				//if client.ServerMessageChan != nil {
 				//	go client.handleServerRequest(res)
 				//}

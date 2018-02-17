@@ -5,3 +5,5 @@ import:
   - proto
 - package: github.com/vmihailenco/msgpack
   version: ^3.2.3
+- package: github.com/docker/libkv
+  version: ^0.2.1

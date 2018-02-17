@@ -1,10 +1,12 @@
-hash: cc8d015e0bed81d55beccdb84a983fe652b0d7cf6e6e045e3eae13ec557fe4d0
-updated: 2017-12-20T19:20:01.83957+08:00
+hash: 8b50f9db8a261f99f4035cbde8731558f9aaa8b6ec9ea9750bed5e47569410fa
+updated: 2018-02-17T16:13:51.827798+08:00
 imports:
+- name: github.com/docker/libkv
+  version: aabc039ad04deb721e234f99cd1b4aa28ac71a40
 - name: github.com/fatih/color
   version: 570b54cabe6b8eb0bc2dfce68d964677d63b5260
 - name: github.com/golang/protobuf
-  version: 5a0f697c9ed9d68fef0116532c6e05cfeae00e55
+  version: 925541529c1fa6821df4e44ce2723319eb2be768
   subpackages:
   - proto
 - name: github.com/mattn/go-colorable
@@ -14,7 +16,7 @@ imports:
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
   repo: https://github.com/mattn/go-isatty
 - name: github.com/vmihailenco/msgpack
-  version: 40b1cac89761d843bbb96b8b27c746ba5937322a
+  version: b83fb55e0632418103602b3b23851cabc5d11762
   subpackages:
   - codes
 - name: golang.org/x/net

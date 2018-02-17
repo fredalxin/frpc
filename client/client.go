@@ -37,6 +37,7 @@ type Client struct {
 	pending  map[uint64]*Call
 	closing  bool // user has called Close
 	shutdown bool // server has told us to stop
+	registry RegistryClient
 }
 
 func NewClient() *Client {

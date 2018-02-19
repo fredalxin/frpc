@@ -35,7 +35,7 @@ func NewEtcdDiscovery(basePath string, servicePath string, etcdAddr []string) Di
 func NewEtcdDiscoveryOption(basePath string, servicePath string, etcdAddr []string, options *store.Config) Discovery {
 	store, err := libkv.NewStore(store.ETCD, etcdAddr, options)
 	if err != nil {
-		log.Infof("cannot create store: %v", err)
+		log.Infof("cannot create etcd store: %v", err)
 		panic(err)
 	}
 

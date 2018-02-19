@@ -35,6 +35,7 @@ type Server struct {
 	activeConn   map[net.Conn]struct{}
 	//待开发 option plugin
 	option Option
+	registry RegistryServer
 }
 
 func NewServer() *Server {

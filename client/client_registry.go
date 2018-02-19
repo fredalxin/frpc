@@ -24,6 +24,7 @@ func (c *Client) Discovery(discovery string, basePath string, servicePath string
 	}
 	return c
 }
+
 func (c *Client) watch(ch chan []*registry.KV) {
 	for pairs := range ch {
 		servers := make(map[string]string)

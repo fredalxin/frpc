@@ -34,7 +34,10 @@ func (s *Server) Register(rcvr interface{}) error {
 	return s.register(rcvr, "", false)
 }
 
-func (s *Server) RegisterName(rcvr interface{}, name string) error {
+func (s *Server) RegisterName(rcvr interface{}, name string, metadata string) error {
+	if s.registry.Registry != nil {
+		s.registry.Registry.Register(name, rcvr, metadata)
+	}
 	return s.register(rcvr, name, true)
 }
 
@@ -66,7 +69,7 @@ func (s *Server) register(rcvr interface{}, name string, useName bool) error {
 
 	//deal method
 	service.method = suitableMethods(service.typ, true)
-	if len(service.method) == 0{
+	if len(service.method) == 0 {
 		errorStr := "frpc.Register: type " + sname + " has no exported methods of suitable type"
 		log.Error(errorStr)
 		return errors.New(errorStr)
@@ -155,7 +158,6 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
 	}
 	return methods
 }
-
 
 func (s *service) call(ctx context.Context, mtype *methodType, argv, replyv reflect.Value) (err error) {
 	defer func() {

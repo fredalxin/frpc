@@ -74,7 +74,7 @@ func TestAsyncClient(t *testing.T) {
 
 func TestHttpClient(t *testing.T) {
 	s := server.NewServer()
-	s.RegisterName(new(Arith), "Arith")
+	s.RegisterName(new(Arith), "Arith", "")
 	go s.ServePath("http", "127.0.0.1:8080", "testPath")
 	defer s.Close()
 	time.Sleep(500 * time.Millisecond)
@@ -109,7 +109,7 @@ func TestCodecAndCompressClient(t *testing.T) {
 
 func TestProtobuf(t *testing.T) {
 	s := server.NewServer()
-	s.RegisterName(new(PBArith), "PBArith")
+	s.RegisterName(new(PBArith), "PBArith", "")
 	go s.Serve("tcp", "127.0.0.1:8080")
 	defer s.Close()
 	time.Sleep(500 * time.Millisecond)
@@ -126,7 +126,7 @@ func TestProtobuf(t *testing.T) {
 
 func TestTimeout(t *testing.T) {
 	s := server.NewServer()
-	s.RegisterName(new(TimeoutArith), "TimeoutArith")
+	s.RegisterName(new(TimeoutArith), "TimeoutArith", "")
 	go s.Serve("tcp", "127.0.0.1:8080")
 	defer s.Close()
 	time.Sleep(500 * time.Millisecond)
@@ -143,7 +143,7 @@ func TestTimeout(t *testing.T) {
 
 func TestMetaData(t *testing.T) {
 	s := server.NewServer()
-	s.RegisterName(new(MetaDataArith), "MetaDataArith")
+	s.RegisterName(new(MetaDataArith), "MetaDataArith", "")
 	go s.Serve("tcp", "127.0.0.1:8080")
 	defer s.Close()
 	time.Sleep(500 * time.Millisecond)
@@ -172,7 +172,7 @@ func TestMetaData(t *testing.T) {
 
 func TestHeartBeat(t *testing.T) {
 	s := server.NewServer()
-	s.RegisterName(new(Arith), "Arith")
+	s.RegisterName(new(Arith), "Arith", "")
 	go s.Serve("tcp", "127.0.0.1:8080")
 	defer s.Close()
 	time.Sleep(500 * time.Millisecond)
@@ -187,12 +187,12 @@ func TestHeartBeat(t *testing.T) {
 	err = c.Call(context.Background(), "Arith", "Mul", args, reply)
 	println(reply.C)
 
-	time.Sleep(10*time.Minute)
+	time.Sleep(10 * time.Minute)
 }
 
 func initServer() *server.Server {
 	s := server.NewServer()
-	s.RegisterName(new(Arith), "Arith")
+	s.RegisterName(new(Arith), "Arith", "")
 	go s.Serve("tcp", "127.0.0.1:8080")
 	return s
 }

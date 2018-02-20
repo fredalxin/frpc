@@ -1,20 +1,37 @@
-hash: 8b50f9db8a261f99f4035cbde8731558f9aaa8b6ec9ea9750bed5e47569410fa
-updated: 2018-02-17T16:13:51.827798+08:00
+hash: c5b9d1e217834bb24ce3a96f88e27f85a53f62d3360dfa8d55e0f4dc9b5582e4
+updated: 2018-02-20T18:41:01.959759+08:00
 imports:
+- name: github.com/coreos/etcd
+  version: 28f3f26c0e303392556035b694f75768d449d33d
+  subpackages:
+  - client
+  - pkg/pathutil
+  - pkg/srv
+  - pkg/types
+  - version
+- name: github.com/coreos/go-semver
+  version: 8ab6407b697782a06568d4b7f1db25550ec2e4c6
+  subpackages:
+  - semver
 - name: github.com/docker/libkv
   version: aabc039ad04deb721e234f99cd1b4aa28ac71a40
+  subpackages:
+  - store
+  - store/etcd
 - name: github.com/fatih/color
-  version: 570b54cabe6b8eb0bc2dfce68d964677d63b5260
+  version: 507f6050b8568533fb3f5504de8e5205fa62a114
 - name: github.com/golang/protobuf
-  version: 925541529c1fa6821df4e44ce2723319eb2be768
+  version: 5a0f697c9ed9d68fef0116532c6e05cfeae00e55
   subpackages:
   - proto
 - name: github.com/mattn/go-colorable
   version: 5411d3eea5978e6cdc258b30de592b60df6aba96
-  repo: https://github.com/mattn/go-colorable
 - name: github.com/mattn/go-isatty
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
-  repo: https://github.com/mattn/go-isatty
+- name: github.com/ugorji/go
+  version: bdcc60b419d136a85cdf2e7cbcac34b3f1cd6e57
+  subpackages:
+  - codec
 - name: github.com/vmihailenco/msgpack
   version: b83fb55e0632418103602b3b23851cabc5d11762
   subpackages:
@@ -25,7 +42,6 @@ imports:
   - context
 - name: golang.org/x/sys
   version: e24f485414aeafb646f6fca458b0bf869c0880a1
-  repo: https://go.googlesource.com/sys
   subpackages:
   - unix
 - name: google.golang.org/appengine

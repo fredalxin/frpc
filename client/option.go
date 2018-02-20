@@ -3,7 +3,6 @@ package client
 import (
 	"time"
 	"frpc/protocol"
-	"frpc/registry"
 )
 
 type Option struct {

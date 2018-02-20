@@ -13,6 +13,5 @@ func (s *Server) Registry(registryStr string, basePath string, serviceAddress st
 	innerRegistry := registry.NewRegistry(registryStr, basePath, serviceAddress, etcdAddr, interval)
 	s.registry.Registry = innerRegistry
 	innerRegistry.Start()
-	//to do
-	return nil
+	return s
 }

@@ -1,5 +1,5 @@
-hash: c5b9d1e217834bb24ce3a96f88e27f85a53f62d3360dfa8d55e0f4dc9b5582e4
-updated: 2018-02-20T18:41:01.959759+08:00
+hash: 58b4cc535d350b38ce0b695f98dfc06d64823a976daeb9e6b25e540d865afe34
+updated: 2018-02-21T18:20:12.720587+08:00
 imports:
 - name: github.com/coreos/etcd
   version: 28f3f26c0e303392556035b694f75768d449d33d
@@ -32,6 +32,8 @@ imports:
   version: bdcc60b419d136a85cdf2e7cbcac34b3f1cd6e57
   subpackages:
   - codec
+- name: github.com/valyala/fastrand
+  version: 19dd0f0bf014a807b05fd196f4da235af618fc94
 - name: github.com/vmihailenco/msgpack
   version: b83fb55e0632418103602b3b23851cabc5d11762
   subpackages:

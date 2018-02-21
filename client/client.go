@@ -12,6 +12,8 @@ import (
 	"errors"
 	"io"
 	"context"
+	"frpc/selector"
+	"strings"
 )
 
 type ServiceError string
@@ -23,21 +25,43 @@ func (e ServiceError) Error() string {
 var (
 	ErrShutdown         = errors.New("connection is shut down")
 	ErrUnsupportedCodec = errors.New("unsupported codec")
+	ErrClientNoServer   = errors.New("can not found any server")
+	// ErrServerUnavailable selected server is unavailable.
+	ErrServerUnavailable = errors.New("selected server is unavilable")
 )
 
 type seqKey struct{}
 
+//type IClient interface {
+//	Connect(network, address string) error
+//	Go(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}, done chan *Call) *Call
+//	Call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error
+//	//SendRaw(ctx context.Context, r *protocol.Message) (map[string]string, []byte, error)
+//	Close() error
+//
+//	//RegisterServerMessageChan(ch chan<- *protocol.Message)
+//	//UnregisterServerMessageChan()
+//	//
+//	//IsClosing() bool
+//	//IsShutdown() bool
+//}
+
 type Client struct {
-	option   Option
-	reqMutex sync.Mutex // protects following
-	r        *bufio.Reader
-	conn     net.Conn
-	mutex    sync.Mutex // protects following
-	seq      uint64
-	pending  map[uint64]*Call
-	closing  bool // user has called Close
-	shutdown bool // server has told us to stop
-	registry RegistryClient
+	option       Option
+	reqMutex     sync.Mutex // protects following
+	r            *bufio.Reader
+	conn         net.Conn
+	mutex        sync.Mutex // protects following
+	seq          uint64
+	pending      map[uint64]*Call
+	closing      bool // user has called Close
+	shutdown     bool // server has told us to stop
+	registry     RegistryClient
+	selector     selector.Selector
+	cachedClient map[string]*Client
+
+	serverMessageChan chan<- *protocol.Message
+
 }
 
 func NewClient() *Client {
@@ -189,9 +213,99 @@ func (client *Client) Go(ctx context.Context, servicePath, serviceMethod string,
 	return call
 }
 
-func (client *Client) Call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
+func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
 	//熔断 待开发
-	return client.call(ctx, servicePath, serviceMethod, args, reply)
+	k, client, err := c.selectClient(ctx, servicePath, serviceMethod, args)
+	if err != nil {
+		if _, ok := err.(ServiceError); ok {
+			return err
+		}
+	}
+	if client == nil {
+		return ErrServerUnavailable
+	}
+	err = client.call(ctx, servicePath, serviceMethod, args, reply)
+	if err != nil {
+		if _, ok := err.(ServiceError); !ok {
+			client.removeClient(k, client)
+		}
+	}
+
+	return err
+}
+
+func (c *Client) removeClient(k string, client *Client) {
+	c.mutex.Lock()
+	cl := c.cachedClient[k]
+	if cl == client {
+		delete(c.cachedClient, k)
+	}
+	c.mutex.Unlock()
+
+	if client != nil {
+		client.UnregisterServerMessageChan()
+		client.Close()
+	}
+}
+
+func (c *Client) selectClient(ctx context.Context, servicePath, serviceMethod string, args interface{}) (string, *Client, error) {
+	k := c.selector.Select(ctx, servicePath, serviceMethod, args)
+	if k == "" {
+		return "", nil, ErrClientNoServer
+	}
+
+	client, err := c.getCachedClient(k)
+	return k, client, err
+}
+
+func (c *Client) getCachedClient(k string) (*Client, error) {
+	c.mutex.Lock()
+	client := c.cachedClient[k]
+	if client != nil {
+		if !client.closing && !client.shutdown {
+			c.mutex.Unlock()
+			return client, nil
+		}
+	}
+	c.mutex.Unlock()
+
+	//double check
+	c.mutex.Lock()
+	client = c.cachedClient[k]
+	if client == nil {
+		network, addr := splitNetworkAndAddress(k)
+
+		client = newClient()
+		err := client.Connect(network, addr)
+		if err != nil {
+			c.mutex.Unlock()
+			return nil, err
+		}
+
+		client.RegisterServerMessageChan(c.serverMessageChan)
+
+		c.cachedClient[k] = client
+	}
+	c.mutex.Unlock()
+
+	return client, nil
+}
+
+func splitNetworkAndAddress(server string) (string, string) {
+	ss := strings.SplitN(server, "@", 2)
+	if len(ss) == 1 {
+		return "tcp", server
+	}
+
+	return ss[0], ss[1]
+}
+
+func (client *Client) RegisterServerMessageChan(ch chan<- *protocol.Message) {
+	client.serverMessageChan = ch
+}
+
+func (client *Client) UnregisterServerMessageChan() {
+	client.serverMessageChan = nil
 }
 
 func (client *Client) call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {

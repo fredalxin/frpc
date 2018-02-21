@@ -1,6 +1,8 @@
 package client
 
-import "frpc/registry"
+import (
+	"frpc/registry"
+)
 
 type RegistryClient struct {
 	Discovery registry.Discovery

@@ -9,3 +9,4 @@ import:
   version: ^0.2.1
   subpackages:
   - store/etcd
+- package: github.com/valyala/fastrand

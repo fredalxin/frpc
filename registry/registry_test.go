@@ -25,14 +25,18 @@ func (t *Arith) Mul(ctx context.Context, args *Args, reply *Reply) error {
 }
 
 func TestETCD(t *testing.T) {
-	s := server.NewServer().Registry("etcd", "/rpcx_test", "Arith", []string{"localhost:2379"}, time.Minute)
+	s := server.NewServer().
+		Registry("etcd", "/rpcx_test", "Arith", []string{"localhost:2379"}, time.Minute)
+
 	s.RegisterName(new(Arith), "Arith", "")
 	go s.Serve("tcp", "127.0.0.1:8972")
 	defer s.Close()
 
 	time.Sleep(500 * time.Millisecond)
 
-	client := client.NewClient().Discovery("etcd", "/rpcx_test", "Arith", []string{"localhost:2379"})
+	client := client.NewClient().
+		Discovery("etcd", "/rpcx_test", "Arith", []string{"localhost:2379"}).
+		Selector("random")
 
 	defer client.Close()
 

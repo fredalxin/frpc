@@ -64,7 +64,6 @@ func (p *EtcdRegister) Start() error {
 		go func() {
 			defer p.store.Close()
 
-			// refresh service TTL
 			for range ticker.C {
 				var data []byte
 				for _, name := range p.Services {

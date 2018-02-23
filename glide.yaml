@@ -10,3 +10,4 @@ import:
   subpackages:
   - store/etcd
 - package: github.com/valyala/fastrand
+- package: github.com/tatsushid/go-fastping

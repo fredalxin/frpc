@@ -1,5 +1,5 @@
-hash: 58b4cc535d350b38ce0b695f98dfc06d64823a976daeb9e6b25e540d865afe34
-updated: 2018-02-21T18:20:12.720587+08:00
+hash: ecea2d096307eaa9f5b1b77ea39b3c48232ccd6261a602c8aa74735be2fe51e6
+updated: 2018-02-23T19:06:05.795813+08:00
 imports:
 - name: github.com/coreos/etcd
   version: 28f3f26c0e303392556035b694f75768d449d33d
@@ -28,6 +28,8 @@ imports:
   version: 5411d3eea5978e6cdc258b30de592b60df6aba96
 - name: github.com/mattn/go-isatty
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+- name: github.com/tatsushid/go-fastping
+  version: d7bb493dee3e090e2ffb6914adddf17c1e7c026c
 - name: github.com/ugorji/go
   version: bdcc60b419d136a85cdf2e7cbcac34b3f1cd6e57
   subpackages:
@@ -41,7 +43,13 @@ imports:
 - name: golang.org/x/net
   version: 66aacef3dd8a676686c7ae3716979581e8b03c47
   subpackages:
+  - bpf
   - context
+  - icmp
+  - internal/iana
+  - internal/socket
+  - ipv4
+  - ipv6
 - name: golang.org/x/sys
   version: e24f485414aeafb646f6fca458b0bf869c0880a1
   subpackages:

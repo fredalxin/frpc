@@ -11,8 +11,18 @@ type Selector interface {
 
 func NewSelector(selectMode string, servers map[string]string) Selector {
 	switch selectMode {
-	case "RandomSelect":
+	case "random":
 		return newRandomSelector(servers)
+	case "roundrobin":
+		return newRoundRobinSelector(servers)
+	case "weight":
+		return newWeightedSelector(servers)
+	case "hash":
+		return newHashSelector(servers)
+	case "ping":
+		return newPingSelector(servers)
+	//case "geo":
+	//	return newGeoSelector(servers)
 	default:
 		return newRandomSelector(servers)
 	}

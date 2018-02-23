@@ -26,7 +26,7 @@ func (t *Arith) Mul(ctx context.Context, args *Args, reply *Reply) error {
 
 func TestETCD(t *testing.T) {
 	s := server.NewServer().
-		Registry("etcd", "/rpcx_test", "Arith", []string{"localhost:2379"}, time.Minute)
+		Registry("etcd", "/rpcx_test", "tcp@localhost:8972", []string{"localhost:2379"}, time.Minute)
 
 	s.RegisterName(new(Arith), "Arith", "")
 	go s.Serve("tcp", "127.0.0.1:8972")

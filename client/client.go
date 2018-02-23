@@ -14,6 +14,7 @@ import (
 	"context"
 	"frpc/selector"
 	"strings"
+	err "frpc/error"
 )
 
 type ServiceError string
@@ -51,7 +52,7 @@ type Client struct {
 	reqMutex     sync.Mutex // protects following
 	r            *bufio.Reader
 	conn         net.Conn
-	mutex        sync.Mutex // protects following
+	mutex        sync.RWMutex // protects following
 	seq          uint64
 	pending      map[uint64]*Call
 	closing      bool // user has called Close
@@ -61,7 +62,6 @@ type Client struct {
 	cachedClient map[string]*Client
 
 	serverMessageChan chan<- *protocol.Message
-
 }
 
 func NewClient() *Client {
@@ -259,15 +259,15 @@ func (c *Client) selectClient(ctx context.Context, servicePath, serviceMethod st
 }
 
 func (c *Client) getCachedClient(k string) (*Client, error) {
-	c.mutex.Lock()
+	c.mutex.RLock()
 	client := c.cachedClient[k]
 	if client != nil {
 		if !client.closing && !client.shutdown {
-			c.mutex.Unlock()
+			c.mutex.RUnlock()
 			return client, nil
 		}
 	}
-	c.mutex.Unlock()
+	c.mutex.RUnlock()
 
 	//double check
 	c.mutex.Lock()
@@ -283,7 +283,6 @@ func (c *Client) getCachedClient(k string) (*Client, error) {
 		}
 
 		client.RegisterServerMessageChan(c.serverMessageChan)
-
 		c.cachedClient[k] = client
 	}
 	c.mutex.Unlock()
@@ -427,7 +426,34 @@ func (client *Client) send(ctx context.Context, call *Call) {
 
 }
 
-func (client *Client) Close() error {
+func (c *Client) Close() error {
+	c.shutdown = true
+	var errs []error
+	c.mutex.Lock()
+	for k, v := range c.cachedClient {
+		e := v.close()
+		if e != nil {
+			errs = append(errs, e)
+		}
+		delete(c.cachedClient, k)
+	}
+	c.mutex.Unlock()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+
+			}
+		}()
+		c.registry.Discovery.RemoveWatcher(c.registry.ch)
+		close(c.registry.ch)
+	}()
+	if len(errs) > 0 {
+		return err.NewMultiError(errs)
+	}
+	return nil
+}
+
+func (client *Client) close() error {
 	client.mutex.Lock()
 	for seq, call := range client.pending {
 		if call != nil {

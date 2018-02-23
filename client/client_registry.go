@@ -13,6 +13,7 @@ type RegistryClient struct {
 func (c *Client) Discovery(discovery string, basePath string, servicePath string, etcdAddr []string) *Client {
 	servers := make(map[string]string)
 	innerDiscovery := registry.NewDiscovery(discovery, basePath, servicePath, etcdAddr)
+	c.cachedClient = make(map[string]*Client)
 	c.registry.Discovery = innerDiscovery
 	pairs := innerDiscovery.GetServices()
 	for _, entry := range pairs {

@@ -233,7 +233,7 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 		for retries > 0 {
 			retries--
 			if client != nil {
-				err = client.call(ctx, servicePath, serviceMethod, args, reply)
+				err = client.callProxy(ctx, servicePath, serviceMethod, args, reply)
 				if err == nil {
 					return nil
 				}
@@ -250,7 +250,7 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 		for retries > 0 {
 			retries--
 			if client != nil {
-				err = client.call(ctx, servicePath, serviceMethod, args, reply)
+				err = client.callProxy(ctx, servicePath, serviceMethod, args, reply)
 				if err == nil {
 					return nil
 				}
@@ -262,8 +262,8 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 			k, client, err = c.selectClient(ctx, servicePath, serviceMethod, args)
 		}
 		return err
-	default://failfast
-		err = client.call(ctx, servicePath, serviceMethod, args, reply)
+	default: //failfast
+		err = client.callProxy(ctx, servicePath, serviceMethod, args, reply)
 		if err != nil {
 			if _, ok := err.(ServiceError); !ok {
 				client.removeClient(k, client)
@@ -272,6 +272,15 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 		return err
 	}
 
+}
+
+func (client *Client) callProxy(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
+	if client.option.Breaker != nil {
+		return client.option.Breaker.Call(func() error {
+			return client.call(ctx, servicePath, serviceMethod, args, reply)
+		}, 0)
+	}
+	return client.call(ctx, servicePath, serviceMethod, args, reply)
 }
 
 func (c *Client) removeClient(k string, client *Client) {

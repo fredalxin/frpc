@@ -3,6 +3,7 @@ package client
 import (
 	"time"
 	"frpc/protocol"
+	"frpc/circuit"
 )
 
 type Option struct {
@@ -16,6 +17,7 @@ type Option struct {
 	RPCPath           string
 	Retries			  int
 	failMode		  string
+	Breaker			  circuit.Breaker
 }
 
 func (c *Client) Serialize(serializeType protocol.SerializeType) *Client {

@@ -66,9 +66,11 @@ type Client struct {
 
 func NewClient() *Client {
 	return newClient().
-		ConnTimeout(1000 * time.Second).
+		ConnTimeout(10 * time.Second).
 		Serialize(protocol.MsgPack).
-		Compress(protocol.None)
+		Compress(protocol.None).
+		Retries(3).
+		FailMode("failfast")
 }
 
 func newClient() *Client {
@@ -190,6 +192,7 @@ func (client *Client) heartbeat() {
 	}
 }
 
+//需要处理selectmode
 func (client *Client) Go(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}, done chan *Call) *Call {
 	call := new(Call)
 	call.ServicePath = servicePath
@@ -217,21 +220,58 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 	//熔断 待开发
 	k, client, err := c.selectClient(ctx, servicePath, serviceMethod, args)
 	if err != nil {
+		if c.option.failMode == "failfast" {
+			return err
+		}
 		if _, ok := err.(ServiceError); ok {
 			return err
 		}
 	}
-	if client == nil {
-		return ErrServerUnavailable
-	}
-	err = client.call(ctx, servicePath, serviceMethod, args, reply)
-	if err != nil {
-		if _, ok := err.(ServiceError); !ok {
-			client.removeClient(k, client)
+	switch c.option.failMode {
+	case "failtry":
+		retries := c.option.Retries
+		for retries > 0 {
+			retries--
+			if client != nil {
+				err = client.call(ctx, servicePath, serviceMethod, args, reply)
+				if err == nil {
+					return nil
+				}
+				if _, ok := err.(ServiceError); ok {
+					return err
+				}
+			}
+			c.removeClient(k, client)
+			client, err = c.getCachedClient(k)
 		}
+		return err
+	case "failover":
+		retries := c.option.Retries
+		for retries > 0 {
+			retries--
+			if client != nil {
+				err = client.call(ctx, servicePath, serviceMethod, args, reply)
+				if err == nil {
+					return nil
+				}
+				if _, ok := err.(ServiceError); ok {
+					return err
+				}
+			}
+			c.removeClient(k, client)
+			k, client, err = c.selectClient(ctx, servicePath, serviceMethod, args)
+		}
+		return err
+	default://failfast
+		err = client.call(ctx, servicePath, serviceMethod, args, reply)
+		if err != nil {
+			if _, ok := err.(ServiceError); !ok {
+				client.removeClient(k, client)
+			}
+		}
+		return err
 	}
 
-	return err
 }
 
 func (c *Client) removeClient(k string, client *Client) {

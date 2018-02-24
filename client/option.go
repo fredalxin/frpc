@@ -14,6 +14,8 @@ type Option struct {
 	Heartbeat         bool
 	HeartbeatInterval time.Duration
 	RPCPath           string
+	Retries			  int
+	failMode		  string
 }
 
 func (c *Client) Serialize(serializeType protocol.SerializeType) *Client {
@@ -49,5 +51,15 @@ func (c *Client) Heartbeat(isHearBeat bool, interval time.Duration) *Client {
 
 func (c *Client) RpcPath(path string) *Client {
 	c.option.RPCPath = path
+	return c
+}
+
+func (c *Client) Retries(retries int) *Client {
+	c.option.Retries = retries
+	return c
+}
+
+func (c *Client) FailMode(failMode string) *Client {
+	c.option.failMode = failMode
 	return c
 }

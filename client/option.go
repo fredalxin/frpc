@@ -5,6 +5,7 @@ import (
 	"frpc/protocol"
 	"frpc/circuit"
 	"crypto/tls"
+	"frpc/core"
 )
 
 type Option struct {
@@ -17,9 +18,11 @@ type Option struct {
 	HeartbeatInterval time.Duration
 	RPCPath           string
 	Retries			  int
-	failMode		  string
+	failMode		  core.FailMode
 	Breaker			  circuit.Breaker
 	TLSConfig *tls.Config
+	Block        interface{}
+
 }
 
 func (c *Client) Serialize(serializeType protocol.SerializeType) *Client {
@@ -63,7 +66,7 @@ func (c *Client) Retries(retries int) *Client {
 	return c
 }
 
-func (c *Client) FailMode(failMode string) *Client {
+func (c *Client) FailMode(failMode core.FailMode) *Client {
 	c.option.failMode = failMode
 	return c
 }

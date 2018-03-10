@@ -33,20 +33,6 @@ var (
 
 type seqKey struct{}
 
-//type IClient interface {
-//	Connect(network, address string) error
-//	Go(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}, done chan *Call) *Call
-//	Call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error
-//	//SendRaw(ctx context.Context, r *protocol.Message) (map[string]string, []byte, error)
-//	Close() error
-//
-//	//RegisterServerMessageChan(ch chan<- *protocol.Message)
-//	//UnregisterServerMessageChan()
-//	//
-//	//IsClosing() bool
-//	//IsShutdown() bool
-//}
-
 type Client struct {
 	option       Option
 	reqMutex     sync.Mutex // protects following
@@ -61,6 +47,8 @@ type Client struct {
 	selector     selector.Selector
 	cachedClient map[string]*Client
 
+	servicePath string
+
 	serverMessageChan chan<- *protocol.Message
 }
 
@@ -70,7 +58,7 @@ func NewClient() *Client {
 		Serialize(protocol.MsgPack).
 		Compress(protocol.None).
 		Retries(3).
-		FailMode("failfast")
+		FailMode(core.FailFast)
 }
 
 func newClient() *Client {
@@ -216,11 +204,14 @@ func (client *Client) Go(ctx context.Context, servicePath, serviceMethod string,
 	return call
 }
 
+func (c *Client) CallProxy(ctx context.Context, serviceMethod string, args interface{}, reply interface{}) error {
+	return c.Call(ctx, c.servicePath, serviceMethod, args, reply)
+}
+
 func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
-	//熔断 待开发
 	k, client, err := c.selectClient(ctx, servicePath, serviceMethod, args)
 	if err != nil {
-		if c.option.failMode == "failfast" {
+		if c.option.failMode == core.FailFast {
 			return err
 		}
 		if _, ok := err.(ServiceError); ok {
@@ -228,7 +219,7 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 		}
 	}
 	switch c.option.failMode {
-	case "failtry":
+	case core.FailTry:
 		retries := c.option.Retries
 		for retries > 0 {
 			retries--
@@ -245,7 +236,7 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 			client, err = c.getCachedClient(k)
 		}
 		return err
-	case "failover":
+	case core.FailOver:
 		retries := c.option.Retries
 		for retries > 0 {
 			retries--

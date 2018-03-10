@@ -2,6 +2,7 @@ package selector
 
 import (
 	"context"
+	"frpc/core"
 )
 
 type Selector interface {
@@ -9,20 +10,18 @@ type Selector interface {
 	UpdateServer(servers map[string]string)
 }
 
-func NewSelector(selectMode string, servers map[string]string) Selector {
+func NewSelector(selectMode core.SelectMode, servers map[string]string) Selector {
 	switch selectMode {
-	case "random":
+	case core.Random:
 		return newRandomSelector(servers)
-	case "roundrobin":
+	case core.RoundRobin:
 		return newRoundRobinSelector(servers)
-	case "weight":
+	case core.Weighted:
 		return newWeightedSelector(servers)
-	case "hash":
+	case core.Hash:
 		return newHashSelector(servers)
-	case "ping":
+	case core.Ping:
 		return newPingSelector(servers)
-	//case "geo":
-	//	return newGeoSelector(servers)
 	default:
 		return newRandomSelector(servers)
 	}

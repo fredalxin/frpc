@@ -12,3 +12,5 @@ import:
 - package: github.com/valyala/fastrand
 - package: github.com/tatsushid/go-fastping
 - package: github.com/marten-seemann/quic-conn
+- package: github.com/xtaci/kcp-go
+  version: ^3.25.0

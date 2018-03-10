@@ -2,6 +2,7 @@ package client
 
 import (
 	"frpc/registry"
+	"frpc/core"
 )
 
 type RegistryClient struct {
@@ -10,9 +11,10 @@ type RegistryClient struct {
 	ch        chan []*registry.KV
 }
 
-func (c *Client) Discovery(discovery string, basePath string, servicePath string, etcdAddr []string) *Client {
+func (c *Client) Discovery(mode core.RegistryMode, basePath string, servicePath string, etcdAddr []string) *Client {
 	servers := make(map[string]string)
-	innerDiscovery := registry.NewDiscovery(discovery, basePath, servicePath, etcdAddr)
+	c.servicePath = servicePath
+	innerDiscovery := registry.NewDiscovery(mode, basePath, servicePath, etcdAddr)
 	c.cachedClient = make(map[string]*Client)
 	c.registry.Discovery = innerDiscovery
 	pairs := innerDiscovery.GetServices()

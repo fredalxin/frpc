@@ -28,12 +28,12 @@ type ConsulDiscovery struct {
 	stopCh chan struct{}
 }
 
-func NewConsulDiscovery(basePath string, servicePath string, etcdAddr []string) Discovery {
-	return NewConsulDiscoveryOption(basePath, servicePath, etcdAddr, nil)
+func NewConsulDiscovery(basePath string, servicePath string, consulAddr []string) Discovery {
+	return NewConsulDiscoveryOption(basePath, servicePath, consulAddr, nil)
 }
 
-func NewConsulDiscoveryOption(basePath string, servicePath string, etcdAddr []string, options *store.Config) Discovery {
-	store, err := libkv.NewStore(store.ETCD, etcdAddr, options)
+func NewConsulDiscoveryOption(basePath string, servicePath string, consulAddr []string, options *store.Config) Discovery {
+	store, err := libkv.NewStore(store.CONSUL, consulAddr, options)
 	if err != nil {
 		log.Infof("cannot create consul store: %v", err)
 		panic(err)

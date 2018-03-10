@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"runtime"
 	"net/http"
-	"crypto/tls"
 )
 
 var ErrServerClosed = errors.New("http: Server closed")
@@ -35,7 +34,8 @@ type Server struct {
 	ln           net.Listener
 	activeConn   map[net.Conn]struct{}
 	//待开发 option plugin
-	option Option
+	option   Option
+	configs  map[string]interface{}
 	registry RegistryServer
 }
 
@@ -44,7 +44,7 @@ func NewServer() *Server {
 }
 
 func newServer() *Server {
-	return &Server{}
+	return &Server{configs: make(map[string]interface{})}
 }
 
 func (s *Server) Serve(network, address string) (err error) {

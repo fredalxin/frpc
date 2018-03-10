@@ -1,5 +1,7 @@
 package registry
 
+import "frpc/core"
+
 type KV struct {
 	Key   string
 	Value string
@@ -13,11 +15,11 @@ type Discovery interface {
 	Close()
 }
 
-func NewDiscovery(discovery string, basePath string, servicePath string, etcdAddr []string) Discovery {
-	switch discovery {
-	case "etcd":
+func NewDiscovery(mode core.RegistryMode, basePath string, servicePath string, etcdAddr []string) Discovery {
+	switch mode {
+	case core.Etcd:
 		return NewEtcdDiscovery(basePath, servicePath, etcdAddr)
-	case "consul":
+	case core.Consul:
 		return NewConsulDiscovery(basePath, servicePath, etcdAddr)
 	default:
 		return nil

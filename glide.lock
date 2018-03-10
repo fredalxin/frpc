@@ -1,6 +1,14 @@
-hash: ecea2d096307eaa9f5b1b77ea39b3c48232ccd6261a602c8aa74735be2fe51e6
-updated: 2018-02-23T19:06:05.795813+08:00
+hash: 1552c1abecb51916129f01e2e7b7b498a968f464d592e8e241f2884ab5906de3
+updated: 2018-03-10T15:08:31.108411+08:00
 imports:
+- name: github.com/aead/chacha20
+  version: 8d6ce0550041f9d97e7f15ec27ed489f8bbbb0fb
+  subpackages:
+  - chacha
+- name: github.com/bifurcation/mint
+  version: 1f893e284f1a25c68daf18eceaa81c01502c21af
+  subpackages:
+  - syntax
 - name: github.com/coreos/etcd
   version: 28f3f26c0e303392556035b694f75768d449d33d
   subpackages:
@@ -17,6 +25,7 @@ imports:
   version: aabc039ad04deb721e234f99cd1b4aa28ac71a40
   subpackages:
   - store
+  - store/consul
   - store/etcd
 - name: github.com/fatih/color
   version: 507f6050b8568533fb3f5504de8e5205fa62a114
@@ -24,10 +33,48 @@ imports:
   version: 5a0f697c9ed9d68fef0116532c6e05cfeae00e55
   subpackages:
   - proto
+- name: github.com/hashicorp/consul
+  version: 185f971a0b52fd0c29b404a0cabfe4d3d1bf4ce9
+  subpackages:
+  - api
+- name: github.com/hashicorp/go-cleanhttp
+  version: 06c9ea3a335b7443026f8124b22619524420291b
+- name: github.com/hashicorp/go-rootcerts
+  version: 6bb64b370b90e7ef1fa532be9e591a81c3493e00
+- name: github.com/hashicorp/golang-lru
+  version: 0a025b7e63adc15a622f29b0b2c4c3848243bbf6
+  subpackages:
+  - simplelru
+- name: github.com/hashicorp/serf
+  version: ecf2bb3b4cb80cf2371d2993fbf1af187f718a84
+  subpackages:
+  - coordinate
+- name: github.com/lucas-clemente/aes12
+  version: cd47fb39b79f867c6e4e5cd39cf7abd799f71670
+- name: github.com/lucas-clemente/fnv128a
+  version: 393af48d391698c6ae4219566bfbdfef67269997
+- name: github.com/lucas-clemente/quic-go
+  version: 19032b7f4bd1ffb1077a4c100439d93d0f12f791
+  subpackages:
+  - ackhandler
+  - congestion
+  - internal/crypto
+  - internal/flowcontrol
+  - internal/handshake
+  - internal/protocol
+  - internal/utils
+  - internal/wire
+  - qerr
+- name: github.com/lucas-clemente/quic-go-certificates
+  version: d2f86524cced5186554df90d92529757d22c1cb6
+- name: github.com/marten-seemann/quic-conn
+  version: 00b4bd4d14b59a4823aaab31e0b6220198b1ae36
 - name: github.com/mattn/go-colorable
   version: 5411d3eea5978e6cdc258b30de592b60df6aba96
 - name: github.com/mattn/go-isatty
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+- name: github.com/mitchellh/go-homedir
+  version: b8bc1bf767474819792c23f32d8286a45736f1c6
 - name: github.com/tatsushid/go-fastping
   version: d7bb493dee3e090e2ffb6914adddf17c1e7c026c
 - name: github.com/ugorji/go
@@ -40,6 +87,13 @@ imports:
   version: b83fb55e0632418103602b3b23851cabc5d11762
   subpackages:
   - codes
+- name: golang.org/x/crypto
+  version: 9419663f5a44be8b34ca85f08abc5fe1be11f8a3
+  subpackages:
+  - bcrypt
+  - blowfish
+  - curve25519
+  - hkdf
 - name: golang.org/x/net
   version: 66aacef3dd8a676686c7ae3716979581e8b03c47
   subpackages:

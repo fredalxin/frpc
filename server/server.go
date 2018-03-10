@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"runtime"
 	"net/http"
+	"crypto/tls"
 )
 
 var ErrServerClosed = errors.New("http: Server closed")

@@ -4,6 +4,7 @@ import (
 	"time"
 	"frpc/protocol"
 	"frpc/circuit"
+	"crypto/tls"
 )
 
 type Option struct {
@@ -18,6 +19,7 @@ type Option struct {
 	Retries			  int
 	failMode		  string
 	Breaker			  circuit.Breaker
+	TLSConfig *tls.Config
 }
 
 func (c *Client) Serialize(serializeType protocol.SerializeType) *Client {

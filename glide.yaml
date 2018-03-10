@@ -11,3 +11,4 @@ import:
   - store/etcd
 - package: github.com/valyala/fastrand
 - package: github.com/tatsushid/go-fastping
+- package: github.com/marten-seemann/quic-conn

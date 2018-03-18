@@ -1,4 +1,4 @@
-package client
+package test
 
 import (
 	"context"
@@ -7,41 +7,9 @@ import (
 	"frpc/server"
 	"frpc/protocol"
 	"frpc/core"
+	"frpc/client"
 	"fmt"
 )
-
-type Args struct {
-	A int
-	B int
-}
-
-type Reply struct {
-	C int
-}
-
-type Arith int
-
-func (t *Arith) Mul(ctx context.Context, args *Args, reply *Reply) error {
-	reply.C = args.A * args.B
-	return nil
-}
-
-type PBArith int
-
-func (t *PBArith) Mul(ctx context.Context, args *ProtoArgs, reply *ProtoReply) error {
-	reply.C = args.A * args.B
-	return nil
-}
-
-type TimeoutArith int
-
-func (t *TimeoutArith) Mul(ctx context.Context, args *ProtoArgs, reply *ProtoReply) error {
-	time.Sleep(2 * time.Second)
-	reply.C = args.A * args.B
-	return nil
-}
-
-type MetaDataArith int
 
 func (t *MetaDataArith) Mul(ctx context.Context, args *ProtoArgs, reply *ProtoReply) error {
 	reqMetaData := ctx.Value(core.ReqMetaDataKey).(map[string]string)
@@ -75,10 +43,11 @@ func TestAsyncClient(t *testing.T) {
 func TestHttpClient(t *testing.T) {
 	s := server.NewServer()
 	s.RegisterName(new(Arith), "Arith", "")
-	go s.ServePath("http", "127.0.0.1:8080", "testPath")
+	s.RpcPath("testPath")
+	go s.Serve("http", "127.0.0.1:8080")
 	defer s.Close()
 	time.Sleep(500 * time.Millisecond)
-	c := NewClient().RpcPath("testPath")
+	c := client.NewClient().RpcPath("testPath")
 	err := c.Connect("http", "127.0.0.1:8080")
 	if err != nil {
 		t.Fatalf("failed to connect:v%", err)
@@ -130,7 +99,7 @@ func TestTimeout(t *testing.T) {
 	go s.Serve("tcp", "127.0.0.1:8080")
 	defer s.Close()
 	time.Sleep(500 * time.Millisecond)
-	c := NewClient()
+	c := client.NewClient()
 	c.ReadTimeout(1 * time.Second)
 	err := c.Connect("tcp", "127.0.0.1:8080")
 	if err != nil {
@@ -147,7 +116,7 @@ func TestMetaData(t *testing.T) {
 	go s.Serve("tcp", "127.0.0.1:8080")
 	defer s.Close()
 	time.Sleep(500 * time.Millisecond)
-	c := NewClient()
+	c := client.NewClient()
 	err := c.Connect("tcp", "127.0.0.1:8080")
 	if err != nil {
 		t.Fatalf("failed to connect:v%", err)
@@ -158,7 +127,7 @@ func TestMetaData(t *testing.T) {
 		WithValue(context.Background(), core.ReqMetaDataKey, map[string]string{"aaa": "from client"})
 	ctx = context.WithValue(ctx, core.ResMetaDataKey, make(map[string]string))
 
-	err = c.Call(ctx, "MetaDataArith", "Mul", args, reply)
+	err = c.CallDirect(ctx, "MetaDataArith", "Mul", args, reply)
 	if err != nil {
 		t.Fatalf("failed to call: %v", err)
 	}
@@ -176,7 +145,7 @@ func TestHeartBeat(t *testing.T) {
 	go s.Serve("tcp", "127.0.0.1:8080")
 	defer s.Close()
 	time.Sleep(500 * time.Millisecond)
-	c := NewClient().Heartbeat(true, time.Second)
+	c := client.NewClient().Heartbeat(true, time.Second)
 	err := c.Connect("tcp", "127.0.0.1:8080")
 	if err != nil {
 		t.Fatalf("failed to connect:v%", err)
@@ -184,7 +153,7 @@ func TestHeartBeat(t *testing.T) {
 	defer c.Close()
 
 	args, reply := initParam()
-	err = c.Call(context.Background(), "Arith", "Mul", args, reply)
+	err = c.CallDirect(context.Background(), "Arith", "Mul", args, reply)
 	println(reply.C)
 
 	time.Sleep(10 * time.Minute)
@@ -197,8 +166,8 @@ func initServer() *server.Server {
 	return s
 }
 
-func initClient(t *testing.T) *Client {
-	c := NewClient()
+func initClient(t *testing.T) *client.Client {
+	c := client.NewClient()
 	err := c.Connect("tcp", "127.0.0.1:8080")
 	if err != nil {
 		t.Fatalf("failed to connect:v%", err)
@@ -215,11 +184,11 @@ func initParam() (*Args, *Reply) {
 	return args, reply
 }
 
-func doCall(t *testing.T, c *Client, args interface{}, reply *Reply) {
+func doCall(t *testing.T, c *client.Client, args interface{}, reply *Reply) {
 	doCallPath(t, c, "Arith", args, reply)
 }
 
-func doAsyncCall(t *testing.T, c *Client, args interface{}, reply *Reply) {
+func doAsyncCall(t *testing.T, c *client.Client, args interface{}, reply *Reply) {
 	call := c.Go(context.Background(), "Arith", "Mul", args, reply, nil)
 	rC := <-call.Done
 	if rC.Error != nil {
@@ -232,8 +201,8 @@ func doAsyncCall(t *testing.T, c *Client, args interface{}, reply *Reply) {
 	}
 }
 
-func doCallPath(t *testing.T, c *Client, path string, args interface{}, reply *Reply) {
-	err := c.Call(context.Background(), path, "Mul", args, reply)
+func doCallPath(t *testing.T, c *client.Client, path string, args interface{}, reply *Reply) {
+	err := c.CallDirect(context.Background(), path, "Mul", args, reply)
 	if err != nil {
 		t.Fatalf("failed to call: %v", err)
 	}
@@ -243,8 +212,8 @@ func doCallPath(t *testing.T, c *Client, path string, args interface{}, reply *R
 	println(reply.C)
 }
 
-func doCallProto(t *testing.T, c *Client, args *ProtoArgs, reply *ProtoReply) {
-	err := c.Call(context.Background(), "PBArith", "Mul", args, reply)
+func doCallProto(t *testing.T, c *client.Client, args *ProtoArgs, reply *ProtoReply) {
+	err := c.CallDirect(context.Background(), "PBArith", "Mul", args, reply)
 	if err != nil {
 		t.Fatalf("failed to call: %v", err)
 	}

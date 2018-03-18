@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"runtime"
 	"net/http"
+	"strings"
 )
 
 var ErrServerClosed = errors.New("http: Server closed")
@@ -37,6 +38,8 @@ type Server struct {
 	option   Option
 	configs  map[string]interface{}
 	registry RegistryServer
+
+	serviceAddress string
 }
 
 func NewServer() *Server {
@@ -47,18 +50,31 @@ func newServer() *Server {
 	return &Server{configs: make(map[string]interface{})}
 }
 
-func (s *Server) Serve(network, address string) (err error) {
-	return s.ServePath(network, address, "")
+func (s *Server) ServeProxy() (err error) {
+	if s.serviceAddress != "" {
+		ss := strings.SplitN(s.serviceAddress, "@", 2)
+		if len(ss) == 1 {
+			return s.Serve("tcp", s.serviceAddress)
+		}
+		return s.Serve(ss[0], ss[1])
+	}
+	errorStr := "server must have serviceAddress first"
+	log.Errorf(errorStr)
+	return errors.New(errorStr)
 }
 
-func (s *Server) ServePath(network, address string, rpcPath string) (err error) {
+//func (s *Server) Serve(network, address string) (err error) {
+//	return s.ServePath(network, address, "")
+//}
+
+func (s *Server) Serve(network, address string) (err error) {
 	var ln net.Listener
 	ln, err = s.makeListener(network, address)
 	if err != nil {
 		return
 	}
 	if network == "http" {
-		s.serveHTTPListner(ln, rpcPath)
+		s.serveHTTPListner(ln, s.option.rpcPath)
 		return nil
 	}
 	return s.serveListener(ln)
@@ -281,6 +297,11 @@ func (s *Server) decodeRequest(ctx context.Context, r io.Reader) (req *protocol.
 	req = protocol.GetMsgs()
 	err = req.Decode(r)
 	return req, err
+}
+
+func (s *Server) HandleRequest(ctx context.Context, req *protocol.Message) (resp *protocol.Message, err error) {
+	log.Infof("only for test use")
+	return s.handleRequest(ctx, req)
 }
 
 func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (resp *protocol.Message, err error) {

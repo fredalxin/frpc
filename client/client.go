@@ -173,7 +173,7 @@ func (client *Client) heartbeat() {
 			return
 		}
 		log.Info("client heartbeat")
-		err := client.Call(context.Background(), "", "", nil, nil)
+		err := client.CallDirect(context.Background(), "", "", nil, nil)
 		if err != nil {
 			log.Warnf("failed to heartbeat to %s", client.conn.RemoteAddr().String())
 		}
@@ -209,7 +209,16 @@ func (c *Client) CallProxy(ctx context.Context, serviceMethod string, args inter
 }
 
 func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
-	k, client, err := c.selectClient(ctx, servicePath, serviceMethod, args)
+	if c.selector == nil {
+		c.Selector(core.Random)
+	}
+	if c.registry.Discovery == nil {
+		errorStr := "please set registry first,or use callDirect"
+		log.Errorf(errorStr)
+		return errors.New(errorStr)
+	}
+
+	cname, client, err := c.selectClient(ctx, servicePath, serviceMethod, args)
 	if err != nil {
 		if c.option.failMode == core.FailFast {
 			return err
@@ -224,7 +233,7 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 		for retries > 0 {
 			retries--
 			if client != nil {
-				err = client.callProxy(ctx, servicePath, serviceMethod, args, reply)
+				err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
 				if err == nil {
 					return nil
 				}
@@ -232,8 +241,8 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 					return err
 				}
 			}
-			c.removeClient(k, client)
-			client, err = c.getCachedClient(k)
+			c.removeClient(cname, client)
+			client, err = c.getCachedClient(cname)
 		}
 		return err
 	case core.FailOver:
@@ -241,7 +250,7 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 		for retries > 0 {
 			retries--
 			if client != nil {
-				err = client.callProxy(ctx, servicePath, serviceMethod, args, reply)
+				err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
 				if err == nil {
 					return nil
 				}
@@ -249,15 +258,15 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 					return err
 				}
 			}
-			c.removeClient(k, client)
-			k, client, err = c.selectClient(ctx, servicePath, serviceMethod, args)
+			c.removeClient(cname, client)
+			cname, client, err = c.selectClient(ctx, servicePath, serviceMethod, args)
 		}
 		return err
 	default: //failfast
-		err = client.callProxy(ctx, servicePath, serviceMethod, args, reply)
+		err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
 		if err != nil {
 			if _, ok := err.(ServiceError); !ok {
-				client.removeClient(k, client)
+				client.removeClient(cname, client)
 			}
 		}
 		return err
@@ -265,7 +274,7 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 
 }
 
-func (client *Client) callProxy(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
+func (client *Client) CallDirect(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
 	if client.option.Breaker != nil {
 		return client.option.Breaker.Call(func() error {
 			return client.call(ctx, servicePath, serviceMethod, args, reply)
@@ -274,11 +283,11 @@ func (client *Client) callProxy(ctx context.Context, servicePath, serviceMethod 
 	return client.call(ctx, servicePath, serviceMethod, args, reply)
 }
 
-func (c *Client) removeClient(k string, client *Client) {
+func (c *Client) removeClient(cname string, client *Client) {
 	c.mutex.Lock()
-	cl := c.cachedClient[k]
+	cl := c.cachedClient[cname]
 	if cl == client {
-		delete(c.cachedClient, k)
+		delete(c.cachedClient, cname)
 	}
 	c.mutex.Unlock()
 
@@ -289,18 +298,18 @@ func (c *Client) removeClient(k string, client *Client) {
 }
 
 func (c *Client) selectClient(ctx context.Context, servicePath, serviceMethod string, args interface{}) (string, *Client, error) {
-	k := c.selector.Select(ctx, servicePath, serviceMethod, args)
-	if k == "" {
+	cname := c.selector.Select(ctx, servicePath, serviceMethod, args)
+	if cname == "" {
 		return "", nil, ErrClientNoServer
 	}
 
-	client, err := c.getCachedClient(k)
-	return k, client, err
+	client, err := c.getCachedClient(cname)
+	return cname, client, err
 }
 
-func (c *Client) getCachedClient(k string) (*Client, error) {
+func (c *Client) getCachedClient(cname string) (*Client, error) {
 	c.mutex.RLock()
-	client := c.cachedClient[k]
+	client := c.cachedClient[cname]
 	if client != nil {
 		if !client.closing && !client.shutdown {
 			c.mutex.RUnlock()
@@ -311,9 +320,9 @@ func (c *Client) getCachedClient(k string) (*Client, error) {
 
 	//double check
 	c.mutex.Lock()
-	client = c.cachedClient[k]
+	client = c.cachedClient[cname]
 	if client == nil {
-		network, addr := splitNetworkAndAddress(k)
+		network, addr := splitNetworkAndAddress(cname)
 
 		client = newClient()
 		err := client.Connect(network, addr)
@@ -323,7 +332,7 @@ func (c *Client) getCachedClient(k string) (*Client, error) {
 		}
 
 		client.RegisterServerMessageChan(c.serverMessageChan)
-		c.cachedClient[k] = client
+		c.cachedClient[cname] = client
 	}
 	c.mutex.Unlock()
 

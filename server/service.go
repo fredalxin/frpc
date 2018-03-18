@@ -30,15 +30,15 @@ type service struct {
 	method map[string]*methodType
 }
 
-func (s *Server) Register(rcvr interface{}) error {
-	return s.register(rcvr, "", false)
+func (s *Server) Register(rcvr interface{}) (*Server, error) {
+	return s, s.register(rcvr, "", false)
 }
 
-func (s *Server) RegisterName(rcvr interface{}, name string, metadata string) error {
+func (s *Server) RegisterName(rcvr interface{}, name string, metadata string) (*Server, error) {
 	if s.registry.Registry != nil {
 		s.registry.Registry.Register(name, rcvr, metadata)
 	}
-	return s.register(rcvr, name, true)
+	return s, s.register(rcvr, name, true)
 }
 
 func (s *Server) register(rcvr interface{}, name string, useName bool) error {

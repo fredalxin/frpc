@@ -1,4 +1,4 @@
-package server
+package test
 
 import (
 	"context"
@@ -6,23 +6,9 @@ import (
 	"encoding/json"
 	"frpc/protocol"
 	"frpc/core"
+	"frpc/server"
 )
 
-type Args struct {
-	A int
-	B int
-}
-
-type Reply struct {
-	C int
-}
-
-type Arith int
-
-func (t *Arith) Mul(ctx context.Context, args *Args, reply *Reply) error {
-	reply.C = args.A * args.B
-	return nil
-}
 
 func TestHandleRequest(t *testing.T) {
 	//use jsoncodec
@@ -51,9 +37,9 @@ func TestHandleRequest(t *testing.T) {
 
 	req.Payload = data
 
-	server := &Server{}
-	server.RegisterName(new(Arith), "Arith")
-	res, err := server.handleRequest(context.Background(), req)
+	server := &server.Server{}
+	server.RegisterName(new(Arith), "Arith","")
+	res, err := server.HandleRequest(context.Background(), req)
 	if err != nil {
 		t.Fatalf("failed to hand request: %v", err)
 	}

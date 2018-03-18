@@ -1,4 +1,4 @@
-package registry_test
+package test
 
 import (
 	"testing"
@@ -8,22 +8,6 @@ import (
 	"frpc/client"
 	"frpc/core"
 )
-
-type Args struct {
-	A int
-	B int
-}
-
-type Reply struct {
-	C int
-}
-
-type Arith int
-
-func (t *Arith) Mul(ctx context.Context, args *Args, reply *Reply) error {
-	reply.C = args.A * args.B
-	return nil
-}
 
 func TestETCD(t *testing.T) {
 	s := server.NewServer().
@@ -60,17 +44,19 @@ func TestETCD(t *testing.T) {
 }
 
 func TestCONSUL(t *testing.T) {
-	s := server.NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:32780"}, time.Minute)
+	s, _ := server.
+		NewServer().
+		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		RegisterName(new(Arith), "Arith", "")
 
-	s.RegisterName(new(Arith), "Arith", "")
-	go s.Serve("tcp", "127.0.0.1:8972")
+	go s.ServeProxy()
+
 	defer s.Close()
 
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32780"}).
+		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32787"}).
 		Selector(core.Random)
 
 	defer client.Close()
@@ -92,3 +78,5 @@ func TestCONSUL(t *testing.T) {
 
 	println(reply.C)
 }
+
+

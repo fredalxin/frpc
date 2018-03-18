@@ -12,7 +12,7 @@ It has these top-level messages:
 	ProtoArgs
 	ProtoReply
 */
-package client
+package test
 
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"

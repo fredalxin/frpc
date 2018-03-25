@@ -7,15 +7,8 @@ import (
 	"context"
 	"testing"
 	"frpc/client"
-	"errors"
 	"log"
 )
-
-type ArithF int
-
-func (t *ArithF) Mul(ctx context.Context, args *Args, reply *Reply) error {
-	return errors.New("unknown error")
-}
 
 func TestFailTry(t *testing.T) {
 	s1, s2 := initTwoFailServer()

@@ -161,9 +161,10 @@ func (client *Client) handleResponse() {
 		call.done()
 	}
 	client.mutex.Unlock()
-	if err != nil && err != io.EOF && !closing {
-		log.Error("frpc: client protocol error:", err)
-	}
+	//todo
+	//if err != nil && err != io.EOF && !closing {
+	//	log.Error("frpc: client protocol error:", err)
+	//}
 }
 
 func (client *Client) heartbeat() {
@@ -257,7 +258,7 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 		err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
 		if err != nil {
 			if _, ok := err.(ServiceError); !ok {
-				client.removeClient(cname, client)
+				c.removeClient(cname, client)
 			}
 		}
 		return err
@@ -265,10 +266,10 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 }
 
 func (client *Client) CallDirect(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
-	if client.option.Breaker != nil {
-		return client.option.Breaker.Call(func() error {
+	if client.option.Breaker.breaker != nil {
+		return client.option.Breaker.breaker.Call(func() error {
 			return client.call(ctx, servicePath, serviceMethod, args, reply)
-		}, 0)
+		}, client.option.Breaker.timeout)
 	}
 	return client.call(ctx, servicePath, serviceMethod, args, reply)
 }
@@ -294,6 +295,8 @@ func (c *Client) selectClient(ctx context.Context, servicePath, serviceMethod st
 	}
 
 	client, err := c.getCachedClient(cname)
+	//暂时写这
+	client.option.Breaker = c.option.Breaker
 	return cname, client, err
 }
 

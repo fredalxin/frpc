@@ -31,3 +31,12 @@ const (
 	FailOver
 	FailTry
 )
+
+type BreakerMode int
+
+const (
+	Rate BreakerMode = iota
+	TimeWindow
+	Threshold
+	Consecutive
+)

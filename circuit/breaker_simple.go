@@ -4,6 +4,7 @@ import (
 	"time"
 	"sync/atomic"
 	"errors"
+	cir "github.com/rubyist/circuitbreaker"
 )
 
 var (
@@ -83,4 +84,19 @@ func (cb *SimpleCircuitBreaker) fail() {
 func (cb *SimpleCircuitBreaker) reset() {
 	atomic.StoreUint64(&cb.failures, 0)
 	cb.lastFailureTime = time.Now()
+}
+
+// NewThresholdBreaker creates a Breaker with a ThresholdTripFunc.
+func NewThresholdBreaker(threshold int64) Breaker {
+	return cir.NewThresholdBreaker(threshold)
+}
+
+// NewConsecutiveBreaker creates a Breaker with a ConsecutiveTripFunc.
+func NewConsecutiveBreaker(threshold int64) Breaker {
+	return cir.NewConsecutiveBreaker(threshold)
+}
+
+// NewRateBreaker creates a Breaker with a RateTripFunc.
+func NewRateBreaker(rate float64, minSamples int64) Breaker {
+	return cir.NewRateBreaker(rate, minSamples)
 }

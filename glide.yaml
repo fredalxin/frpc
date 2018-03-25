@@ -14,3 +14,5 @@ import:
 - package: github.com/marten-seemann/quic-conn
 - package: github.com/xtaci/kcp-go
   version: ^3.25.0
+- package: github.com/rubyist/circuitbreaker
+  version: ^2.2.1

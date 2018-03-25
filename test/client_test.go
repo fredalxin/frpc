@@ -11,15 +11,6 @@ import (
 	"fmt"
 )
 
-func (t *MetaDataArith) Mul(ctx context.Context, args *ProtoArgs, reply *ProtoReply) error {
-	reqMetaData := ctx.Value(core.ReqMetaDataKey).(map[string]string)
-	fmt.Println("server received meta:", reqMetaData)
-	respMetaData := ctx.Value(core.ResMetaDataKey).(map[string]string)
-	respMetaData["echo"] = "from server"
-	reply.C = args.A * args.B
-	return nil
-}
-
 func TestClient(t *testing.T) {
 	s := initServer()
 	defer s.Close()

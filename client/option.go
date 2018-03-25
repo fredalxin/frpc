@@ -3,7 +3,6 @@ package client
 import (
 	"time"
 	"frpc/protocol"
-	"frpc/circuit"
 	"crypto/tls"
 	"frpc/core"
 )
@@ -19,7 +18,7 @@ type Option struct {
 	RPCPath           string
 	Retries			  int
 	failMode		  core.FailMode
-	Breaker			  circuit.Breaker
+	Breaker			  BreakerClient
 	TLSConfig *tls.Config
 	Block        interface{}
 
@@ -70,3 +69,5 @@ func (c *Client) FailMode(failMode core.FailMode) *Client {
 	c.option.failMode = failMode
 	return c
 }
+
+

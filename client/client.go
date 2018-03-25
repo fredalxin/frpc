@@ -223,9 +223,6 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 		if c.option.failMode == core.FailFast {
 			return err
 		}
-		if _, ok := err.(ServiceError); ok {
-			return err
-		}
 	}
 	switch c.option.failMode {
 	case core.FailTry:
@@ -237,12 +234,9 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 				if err == nil {
 					return nil
 				}
-				if _, ok := err.(ServiceError); ok {
-					return err
-				}
 			}
 			c.removeClient(cname, client)
-			client, err = c.getCachedClient(cname)
+			client, _ = c.getCachedClient(cname)
 		}
 		return err
 	case core.FailOver:
@@ -254,12 +248,9 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 				if err == nil {
 					return nil
 				}
-				if _, ok := err.(ServiceError); ok {
-					return err
-				}
 			}
 			c.removeClient(cname, client)
-			cname, client, err = c.selectClient(ctx, servicePath, serviceMethod, args)
+			cname, client, _ = c.selectClient(ctx, servicePath, serviceMethod, args)
 		}
 		return err
 	default: //failfast
@@ -271,7 +262,6 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 		}
 		return err
 	}
-
 }
 
 func (client *Client) CallDirect(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {

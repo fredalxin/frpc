@@ -2,23 +2,26 @@ package client
 
 import (
 	"net"
+	"crypto/tls"
+	quic "github.com/marten-seemann/quic-conn"
+	"frpc/log"
 )
 
 func newQuicConn(client *Client, network string, address string) (net.Conn, error) {
-	//var conn net.Conn
-	//var err error
-	//
-	//tlsConf := client.option.TLSConfig
-	//if tlsConf == nil {
-	//	tlsConf = &tls.Config{InsecureSkipVerify: true}
-	//}
-	//
-	//conn, err = quicconn.Dial(address, tlsConf)
-	//
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//return conn, nil
-	return nil, nil
+	var conn net.Conn
+	var err error
+
+	tlsConf := client.option.TLSConfig
+	if tlsConf == nil {
+		tlsConf = &tls.Config{InsecureSkipVerify: true}
+	}
+
+	conn, err = quic.Dial(address, tlsConf)
+
+	if err != nil {
+		log.Errorf("failed to dial server with quic: %v", err)
+		return nil, err
+	}
+
+	return conn, nil
 }

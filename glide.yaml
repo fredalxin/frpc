@@ -16,3 +16,8 @@ import:
   version: ^3.25.0
 - package: github.com/rubyist/circuitbreaker
   version: ^2.2.1
+- package: golang.org/x/crypto
+  subpackages:
+  - pbkdf2
+- package: github.com/lucas-clemente/quic-go
+  version: ^0.7.0

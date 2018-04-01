@@ -60,7 +60,7 @@ func newHttpConn(client *Client, network string, address string) (net.Conn, erro
 	}
 	conn, err := net.DialTimeout("tcp", address, client.option.ConnTimeout)
 	if err != nil {
-		log.Errorf("failed to dial server: %v", err)
+		log.Errorf("failed to dial server with http: %v", err)
 		return nil, err
 	}
 	io.WriteString(conn, "CONNECT "+path+" HTTP/1.0\n\n")
@@ -88,7 +88,7 @@ func newHttpConn(client *Client, network string, address string) (net.Conn, erro
 func newDirectConn(client *Client, network string, address string) (net.Conn, error) {
 	conn, err := net.DialTimeout(network, address, client.option.ConnTimeout)
 	if err != nil {
-		log.Errorf("failed to dial server: %v", err)
+		log.Errorf("failed to dial server with tcp: %v", err)
 		return nil, err
 	}
 	if tc, ok := conn.(*net.TCPConn); ok {

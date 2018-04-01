@@ -8,6 +8,7 @@ import (
 type Option struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
+	configs  map[string]interface{}
 	tlsConfig *tls.Config
 	rpcPath string
 }

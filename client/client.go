@@ -34,22 +34,22 @@ var (
 type seqKey struct{}
 
 type Client struct {
-	option       Option
-	reqMutex     sync.Mutex // protects following
-	r            *bufio.Reader
-	conn         net.Conn
-	mutex        sync.RWMutex // protects following
-	seq          uint64
-	pending      map[uint64]*Call
-	closing      bool // user has called Close
-	shutdown     bool // server has told us to stop
-	registry     RegistryClient
-	selector     selector.Selector
-	cachedClient map[string]*Client
-
-	servicePath string
-
+	option   Option
+	reqMutex sync.Mutex // protects following
+	r        *bufio.Reader
+	conn     net.Conn
+	mutex    sync.RWMutex // protects following
+	seq      uint64
+	pending  map[uint64]*Call
+	closing  bool // user has called Close
+	shutdown bool // server has told us to stop
+	//for xclient use
+	cachedClient      map[string]*Client
+	servicePath       string
 	serverMessageChan chan<- *protocol.Message
+
+	registry RegistryClient
+	selector selector.Selector
 }
 
 func NewClient() *Client {
@@ -295,8 +295,6 @@ func (c *Client) selectClient(ctx context.Context, servicePath, serviceMethod st
 	}
 
 	client, err := c.getCachedClient(cname)
-	//暂时写这
-	client.option.Breaker = c.option.Breaker
 	return cname, client, err
 }
 
@@ -316,8 +314,12 @@ func (c *Client) getCachedClient(cname string) (*Client, error) {
 	client = c.cachedClient[cname]
 	if client == nil {
 		network, addr := splitNetworkAndAddress(cname)
-
-		client = newClient()
+		//属性赋值
+		client = &Client{
+			option:   c.option,
+			registry: c.registry,
+			selector: c.selector,
+		}
 		err := client.Connect(network, addr)
 		if err != nil {
 			c.mutex.Unlock()

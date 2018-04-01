@@ -28,15 +28,14 @@ const (
 )
 
 type Server struct {
+	//待开发 option plugin
+	option       Option
 	serviceMapMu sync.RWMutex
 	serviceMap   map[string]*service
 	mu           sync.RWMutex
 	doneChan     chan struct{}
 	ln           net.Listener
 	activeConn   map[net.Conn]struct{}
-	//待开发 option plugin
-	option   Option
-	configs  map[string]interface{}
 	registry RegistryServer
 
 	serviceAddress string
@@ -47,7 +46,11 @@ func NewServer() *Server {
 }
 
 func newServer() *Server {
-	return &Server{configs: make(map[string]interface{})}
+	return &Server{
+		option: Option{
+			configs: make(map[string]interface{}),
+		},
+	}
 }
 
 func (s *Server) ServeProxy() (err error) {

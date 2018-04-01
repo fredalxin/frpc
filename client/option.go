@@ -16,12 +16,13 @@ type Option struct {
 	Heartbeat         bool
 	HeartbeatInterval time.Duration
 	RPCPath           string
-	Retries			  int
-	failMode		  core.FailMode
-	Breaker			  BreakerClient
-	TLSConfig *tls.Config
-	Block        interface{}
-
+	Retries           int
+	failMode          core.FailMode
+	Breaker           BreakerClient
+	//for quic
+	TLSConfig         *tls.Config
+	//for kcp
+	Block             interface{}
 }
 
 func (c *Client) Serialize(serializeType protocol.SerializeType) *Client {
@@ -70,4 +71,12 @@ func (c *Client) FailMode(failMode core.FailMode) *Client {
 	return c
 }
 
+func (c *Client) WithBlock(kc interface{}) *Client {
+	c.option.Block = kc
+	return c
+}
 
+func (c *Client) WithTls(tls *tls.Config) *Client {
+	c.option.TLSConfig = tls
+	return c
+}

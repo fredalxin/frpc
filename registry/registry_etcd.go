@@ -22,7 +22,7 @@ type EtcdRegister struct {
 	ServiceAddress string
 	// etcd addresses
 	EtcdAddr []string
-	// base path for rpcx server, for example com/example/rpcx
+	// base path for frpc server, for example com/example/frpc
 	BasePath string
 	// Registered services
 	Services       []string
@@ -53,7 +53,7 @@ func (p *EtcdRegister) Start() error {
 		p.store = store
 	}
 
-	err := p.store.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true})
+	err := p.store.Put(p.BasePath, []byte("frpc_path"), &store.WriteOptions{IsDir: true})
 	if err != nil && !strings.Contains(err.Error(), "Not a file") {
 		log.Errorf("cannot create etcd path %s: %v", p.BasePath, err)
 		return err
@@ -111,7 +111,7 @@ func (p *EtcdRegister) Register(name string, rcvr interface{}, metadata string) 
 		p.store = store
 	}
 
-	err = p.store.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true})
+	err = p.store.Put(p.BasePath, []byte("frpc_path"), &store.WriteOptions{IsDir: true})
 	if err != nil && !strings.Contains(err.Error(), "Not a file") {
 		log.Errorf("cannot create etcd path %s: %v", p.BasePath, err)
 		return err

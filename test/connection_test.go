@@ -25,7 +25,7 @@ func TestKcp(t *testing.T) {
 	}
 	s, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "kcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "kcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		WithBlockCrypt(bc).
 		RegisterName(new(Arith), "Arith", "")
 
@@ -34,7 +34,7 @@ func TestKcp(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
 		WithBlock(bc).
 		Selector(core.Random)
 
@@ -69,7 +69,7 @@ func TestQuic(t *testing.T) {
 
 	s, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "quic@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "quic@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		WithTlsConfig(serverConf).
 		RegisterName(new(Arith), "Arith", "")
 
@@ -81,7 +81,7 @@ func TestQuic(t *testing.T) {
 		InsecureSkipVerify: true,
 	}
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
 		WithTls(clientConf).
 		Selector(core.Random)
 

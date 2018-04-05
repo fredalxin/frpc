@@ -38,7 +38,7 @@ func TestLocalCircuitBreaker(t *testing.T) {
 func TestSimpleBreaker(t *testing.T) {
 	s, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(ArithB), "ArithB", "")
 
 	go s.ServeProxy()
@@ -48,7 +48,7 @@ func TestSimpleBreaker(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "ArithB", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
 		Selector(core.Random).
 		FailMode(core.FailFast).
 		Breaker(circuit.NewSimpleCircuitBreaker(5, 100*time.Millisecond),0)
@@ -78,7 +78,7 @@ func TestSimpleBreaker(t *testing.T) {
 func TestThresholdBreaker(t *testing.T) {
 	s, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(ArithB), "ArithB", "")
 
 	go s.ServeProxy()
@@ -88,7 +88,7 @@ func TestThresholdBreaker(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "ArithB", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
 		Selector(core.Random).
 		FailMode(core.FailFast).
 		Breaker(circuit.NewThresholdBreaker(5),0)
@@ -117,7 +117,7 @@ func TestThresholdBreaker(t *testing.T) {
 func TestConsecutiveBreaker(t *testing.T) {
 	s, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(ArithB), "ArithB", "")
 
 	go s.ServeProxy()
@@ -127,7 +127,7 @@ func TestConsecutiveBreaker(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "ArithB", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
 		Selector(core.Random).
 		FailMode(core.FailFast).
 		Breaker(circuit.NewConsecutiveBreaker(5),0)
@@ -157,7 +157,7 @@ func TestConsecutiveBreaker(t *testing.T) {
 func TestRateBreaker(t *testing.T) {
 	s, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(ArithB), "ArithB", "")
 
 	go s.ServeProxy()
@@ -167,7 +167,7 @@ func TestRateBreaker(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "ArithB", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
 		Selector(core.Random).
 		FailMode(core.FailFast).
 		Breaker(circuit.NewRateBreaker(0.5,10),0)

@@ -20,6 +20,12 @@ import (
 
 var ErrServerClosed = errors.New("http: Server closed")
 
+type contextKey struct {
+	name string
+}
+
+var StartRequestContextKey = &contextKey{"start-parse-request"}
+
 const (
 	// ReaderBuffsize is used for bufio reader.
 	ReaderBuffsize = 1024
@@ -36,7 +42,8 @@ type Server struct {
 	doneChan     chan struct{}
 	ln           net.Listener
 	activeConn   map[net.Conn]struct{}
-	registry RegistryServer
+	registry     RegistryServer
+	monitor      MonitorServer
 
 	serviceAddress string
 }
@@ -142,6 +149,15 @@ func (s *Server) serveListener(ln net.Listener) error {
 		s.mu.Lock()
 		s.activeConn[conn] = struct{}{}
 		s.mu.Unlock()
+
+		//todo monitor
+		//if s.monitor.metric != (monitor.Metric{}) {
+		//	s.monitor.metric.HandleConn(conn)
+		//}
+		//if s.monitor.trace != (monitor.Trace{}) {
+		//	s.monitor.trace.HandleConn(conn)
+		//}
+		s.monitor.HandleConn(conn)
 
 		go s.serveConn(conn)
 	}
@@ -261,7 +277,14 @@ func (server *Server) serveConn(conn net.Conn) {
 				data := res.Encode()
 				conn.Write(data)
 			}
-
+			//todo monitor
+			//if server.monitor.metric != (monitor.Metric{}) {
+			//	server.monitor.metric.PostResponse(ctx, req, res, err)
+			//}
+			//if server.monitor.trace != (monitor.Trace{}) {
+			//	server.monitor.trace.PostResponse(ctx, req, res, err)
+			//}
+			server.monitor.PostResponse(ctx, req, res, err)
 			protocol.FreeMsg(req)
 			protocol.FreeMsg(res)
 		}()
@@ -299,6 +322,14 @@ func (s *Server) decodeRequest(ctx context.Context, r io.Reader) (req *protocol.
 	// pool req?
 	req = protocol.GetMsgs()
 	err = req.Decode(r)
+	//todo monitor
+	//if s.monitor.metric != (monitor.Metric{}) {
+	//	s.monitor.metric.PostRequest(ctx, req, err)
+	//}
+	//if s.monitor.trace != (monitor.Trace{}) {
+	//	s.monitor.trace.PostRequest(ctx, req, err)
+	//}
+	s.monitor.PostRequest(ctx, req, err)
 	return req, err
 }
 

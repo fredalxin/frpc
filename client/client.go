@@ -314,7 +314,7 @@ func (c *Client) getCachedClient(cname string) (*Client, error) {
 	client = c.cachedClient[cname]
 	if client == nil {
 		network, addr := splitNetworkAndAddress(cname)
-		//属性赋值
+		//todo 属性赋值
 		client = &Client{
 			option:   c.option,
 			registry: c.registry,

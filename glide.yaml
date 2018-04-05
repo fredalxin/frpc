@@ -21,3 +21,5 @@ import:
   - pbkdf2
 - package: github.com/lucas-clemente/quic-go
   version: ^0.7.0
+- package: github.com/rcrowley/go-metrics
+- package: github.com/vrischmann/go-metrics-influxdb

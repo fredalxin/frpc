@@ -16,7 +16,7 @@ func TestFailTry(t *testing.T) {
 	defer s2.Close()
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "ArithF", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "ArithF", []string{"localhost:32787"}).
 		Selector(core.Random).
 		Retries(3).
 		FailMode(core.FailTry)
@@ -45,7 +45,7 @@ func TestFailOver(t *testing.T) {
 	defer s2.Close()
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "ArithF", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "ArithF", []string{"localhost:32787"}).
 		Selector(core.Random).
 		Retries(10).
 		FailMode(core.FailOver)
@@ -74,7 +74,7 @@ func TestFailFast(t *testing.T) {
 	defer s2.Close()
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "ArithF", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "ArithF", []string{"localhost:32787"}).
 		Selector(core.RoundRobin).
 		Retries(10).
 		FailMode(core.FailFast)
@@ -100,7 +100,7 @@ func TestFailFast(t *testing.T) {
 func initTwoFailServer() (*server.Server, *server.Server) {
 	s1, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(ArithF), "ArithF", "")
 
 	go s1.ServeProxy()
@@ -109,7 +109,7 @@ func initTwoFailServer() (*server.Server, *server.Server) {
 
 	s2, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8973", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8973", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(Arith), "ArithF", "")
 
 	go s2.ServeProxy()

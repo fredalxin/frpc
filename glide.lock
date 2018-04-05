@@ -1,5 +1,5 @@
-hash: 132b0167f84ba0b18276c0c19339437ce6eb1406a2deead2427400feebc6cd6e
-updated: 2018-04-01T18:03:14.08558+08:00
+hash: 18b17d1b8ac007d3d9e76752ae8f1a8403b64ef58de75ec27d936d1cd0ea7fd9
+updated: 2018-04-05T16:28:38.538838+08:00
 imports:
 - name: github.com/aead/chacha20
   version: 8d6ce0550041f9d97e7f15ec27ed489f8bbbb0fb
@@ -53,6 +53,12 @@ imports:
   version: ecf2bb3b4cb80cf2371d2993fbf1af187f718a84
   subpackages:
   - coordinate
+- name: github.com/influxdata/influxdb
+  version: fd11e200c8b2e4d23c31945e330b2768b83d46f5
+  subpackages:
+  - client
+  - models
+  - pkg/escape
 - name: github.com/klauspost/cpuid
   version: eae9b3e628d72774e13bdf024e78c0802f85a5b9
 - name: github.com/klauspost/reedsolomon
@@ -85,6 +91,8 @@ imports:
   version: b8bc1bf767474819792c23f32d8286a45736f1c6
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/rcrowley/go-metrics
+  version: e181e095bae94582363434144c61a9653aff6e50
 - name: github.com/rubyist/circuitbreaker
   version: 2074adba5ddc7d5f7559448a9c3066573521c5bf
 - name: github.com/tatsushid/go-fastping
@@ -107,10 +115,12 @@ imports:
   version: 7eb5d7335e1aa947b407fdae890e6f55ff8debb6
   subpackages:
   - codes
+- name: github.com/vrischmann/go-metrics-influxdb
+  version: 43af8332c303f62ef62663b02b3b7d8a9802002a
 - name: github.com/xtaci/kcp-go
   version: 42bc1dfefff592fdb3affa793980c4f6ab4213e5
 - name: golang.org/x/crypto
-  version: 9419663f5a44be8b34ca85f08abc5fe1be11f8a3
+  version: 9477e0b78b9ac3d0b03822fd95422e2fe07627cd
   subpackages:
   - blowfish
   - cast5

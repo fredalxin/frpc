@@ -82,12 +82,12 @@ func NewMessage() *Message {
 	}
 }
 
-// CheckMagicNumber checks whether header starts rpcx magic number.
+// CheckMagicNumber checks whether header starts frpc magic number.
 func (h Header) CheckMagicNumber() bool {
 	return h[0] == magicNumber
 }
 
-// Version returns version of rpcx protocol.
+// Version returns version of frpc protocol.
 func (h Header) Version() byte {
 	return h[1]
 }

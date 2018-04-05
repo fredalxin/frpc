@@ -15,7 +15,7 @@ func TestRandomSelector(t *testing.T) {
 	defer s2.Close()
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
 		Selector(core.Random)
 
 	defer client.Close()
@@ -43,7 +43,7 @@ func TestRoundRobinSelector(t *testing.T) {
 	defer s2.Close()
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
 		Selector(core.RoundRobin)
 
 	defer client.Close()
@@ -71,7 +71,7 @@ func TestHashSelector(t *testing.T) {
 	defer s2.Close()
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
 		Selector(core.Hash)
 
 	defer client.Close()
@@ -100,7 +100,7 @@ func TestWeightedSelector(t *testing.T) {
 	defer s2.Close()
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
 		Selector(core.Weighted)
 
 	defer client.Close()
@@ -127,7 +127,7 @@ func TestPingSelector(t *testing.T) {
 	defer s2.Close()
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
 		Selector(core.Ping)
 
 	defer client.Close()
@@ -155,7 +155,7 @@ func TestGeoSelector(t *testing.T) {
 	defer s2.Close()
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
 		Selector(core.Closest)
 
 	defer client.Close()
@@ -179,7 +179,7 @@ func TestGeoSelector(t *testing.T) {
 func initTwoServer() (*server.Server, *server.Server) {
 	s1, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(Arith), "Arith", "")
 
 	go s1.ServeProxy()
@@ -188,7 +188,7 @@ func initTwoServer() (*server.Server, *server.Server) {
 
 	s2, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8973", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8973", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(Arith2), "Arith", "")
 
 	go s2.ServeProxy()
@@ -201,7 +201,7 @@ func initTwoServer() (*server.Server, *server.Server) {
 func initTwoWeightedServer() (*server.Server, *server.Server) {
 	s1, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(Arith), "Arith", "weight=1")
 
 	go s1.ServeProxy()
@@ -210,7 +210,7 @@ func initTwoWeightedServer() (*server.Server, *server.Server) {
 
 	s2, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8973", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8973", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(Arith2), "Arith", "weight=7")
 
 	go s2.ServeProxy()

@@ -1,105 +1,49 @@
 package monitor
 
 import (
-	"github.com/rcrowley/go-metrics"
-	"github.com/vrischmann/go-metrics-influxdb"
-	"time"
 	"net"
 	"context"
 	"frpc/protocol"
-	"frpc/server"
+	"golang.org/x/net/trace"
 )
 
-type Metric struct {
-	Registry metrics.Registry
-	Prefix   string
+type Trace struct {
 }
 
-func NewMetrics(registry metrics.Registry) *Metric {
-	return &Metric{Registry: registry}
+func NewTrace() *Trace {
+	return &Trace{}
 }
 
-func NewDefaultMetrics() *Metric {
-	return &Metric{Registry: metrics.DefaultRegistry}
-}
-
-func (m *Metric) withPrefix(s string) string {
-	return m.Prefix + s
-}
-
-func (m *Metric) Register(name string, rcvr interface{}, metadata string) error {
-	serviceCounter := metrics.GetOrRegisterCounter(m.withPrefix("serviceCounter"), m.Registry)
-	serviceCounter.Inc(1)
+func (p *Trace) Register(name string, rcvr interface{}, metadata string) error {
+	tr := trace.New("frpc.Server", "Register")
+	defer tr.Finish()
+	tr.LazyPrintf("register %s: %T", name, rcvr)
 	return nil
 }
 
-// HandleConnAccept handles connections from clients
-func (p *Metric) HandleConn(conn net.Conn) (net.Conn, bool) {
-	clientMeter := metrics.GetOrRegisterMeter(p.withPrefix("clientMeter"), p.Registry)
-	clientMeter.Mark(1)
+func (p *Trace) HandleConn(conn net.Conn) (net.Conn, bool) {
+	tr := trace.New("frpc.Server", "Accept")
+	defer tr.Finish()
+	tr.LazyPrintf("accept conn %s", conn.RemoteAddr().String())
 	return conn, true
 }
 
-// PostReadRequest counts read
-func (p *Metric) PostRequest(ctx context.Context, req *protocol.Message, e error) error {
-	sp := req.ServicePath
-	sm := req.ServiceMethod
-
-	if sp == "" {
-		return nil
-	}
-	m := metrics.GetOrRegisterMeter(p.withPrefix("service."+sp+"."+sm+".Read_Qps"), p.Registry)
-	m.Mark(1)
+func (p *Trace) PostRequest(ctx context.Context, req *protocol.Message, err error) error {
+	tr := trace.New("frpc.Server", "ReadRequest")
+	defer tr.Finish()
+	tr.LazyPrintf("read request %s.%s, seq: %d", req.ServicePath, req.ServiceMethod, req.Seq())
 	return nil
 }
 
-// PostWriteResponse count write
-func (p *Metric) PostResponse(ctx context.Context, res *protocol.Message, e error) error {
-	sp := res.ServicePath
-	sm := res.ServiceMethod
-
-	if sp == "" {
-		return nil
+func (p *Trace) PostResponse(ctx context.Context, req *protocol.Message, res *protocol.Message, err error) error {
+	tr := trace.New("frpc.Server", "WriteResponse")
+	defer tr.Finish()
+	if err == nil {
+		tr.LazyPrintf("succeed to call %s.%s, seq: %d", req.ServicePath, req.ServiceMethod, req.Seq())
+	} else {
+		tr.LazyPrintf("failed to call %s.%s, seq: %d : %v", req.Seq, req.ServicePath, req.ServiceMethod, req.Seq(), err)
+		tr.SetError()
 	}
 
-	m := metrics.GetOrRegisterMeter(p.withPrefix("service."+sp+"."+sm+".Write_Qps"), p.Registry)
-	m.Mark(1)
-
-	t := ctx.Value(server.StartRequestContextKey).(int64)
-
-	if t > 0 {
-		t = time.Now().UnixNano() - t
-		if t < 30*time.Minute.Nanoseconds() { //it is impossible that calltime exceeds 30 minute
-			//Historgram
-			h := metrics.GetOrRegisterHistogram(p.withPrefix("service."+sp+"."+sm+".CallTime"), p.Registry,
-				metrics.NewExpDecaySample(1028, 0.015))
-			h.Update(t)
-		}
-	}
 	return nil
-}
-
-// Log reports metrics into logs.
-//
-// p.Log( 5 * time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
-//
-func (p *Metric) Log(freq time.Duration, l metrics.Logger) {
-	go metrics.Log(p.Registry, freq, l)
-}
-
-// Graphite reports metrics into graphite.
-//
-// 	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
-//  p.Graphite(10e9, "metrics", addr)
-//
-func (p *Metric) Graphite(freq time.Duration, prefix string, addr *net.TCPAddr) {
-	go metrics.Graphite(p.Registry, freq, prefix, addr)
-}
-
-// InfluxDB reports metrics into influxdb.
-//
-// 	p.InfluxDB(10e9, "127.0.0.1:8086","metrics", "test","test"})
-//
-func (p *Metric) InfluxDB(freq time.Duration, url, database, username, password string) {
-	go influxdb.InfluxDB(p.Registry, freq, url, database, username, password)
 }

@@ -11,7 +11,7 @@ import (
 
 func TestETCD(t *testing.T) {
 	s := server.NewServer().
-		Registry(core.Etcd, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:2379"}, time.Minute)
+		Registry(core.Etcd, "/frpc_test", "tcp@localhost:8972", []string{"localhost:2379"}, time.Minute)
 
 	s.RegisterName(new(Arith), "Arith", "")
 	go s.Serve("tcp", "127.0.0.1:8972")
@@ -20,7 +20,7 @@ func TestETCD(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Etcd, "/rpcx_test", "Arith", []string{"localhost:2379"}).
+		Discovery(core.Etcd, "/frpc_test", "Arith", []string{"localhost:2379"}).
 		Selector(core.Random)
 
 	defer client.Close()
@@ -46,7 +46,7 @@ func TestETCD(t *testing.T) {
 func TestCONSUL(t *testing.T) {
 	s, _ := server.
 		NewServer().
-		Registry(core.Consul, "/rpcx_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		RegisterName(new(Arith), "Arith", "")
 
 	go s.ServeProxy()
@@ -56,7 +56,7 @@ func TestCONSUL(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/rpcx_test", "Arith", []string{"localhost:32787"}).
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
 		Selector(core.Random)
 
 	defer client.Close()

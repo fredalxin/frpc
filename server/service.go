@@ -9,6 +9,7 @@ import (
 	"frpc/log"
 	"context"
 	"fmt"
+	"frpc/monitor"
 )
 
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
@@ -38,6 +39,15 @@ func (s *Server) RegisterName(rcvr interface{}, name string, metadata string) (*
 	if s.registry.Registry != nil {
 		s.registry.Registry.Register(name, rcvr, metadata)
 	}
+	//todo monitor
+	//if s.monitor.metric != (monitor.Metric{}) {
+	//	s.monitor.metric.Register(name, rcvr, metadata)
+	//}
+	//if s.monitor.trace != (monitor.Trace{}) {
+	//	s.monitor.trace.Register(name, rcvr, metadata)
+	//}
+	s.monitor.Register(name,rcvr,metadata)
+
 	return s, s.register(rcvr, name, true)
 }
 

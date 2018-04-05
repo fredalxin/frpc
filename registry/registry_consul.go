@@ -23,7 +23,7 @@ type ConsulRegister struct {
 	ServiceAddress string
 	// etcd addresses
 	ConsulAddr []string
-	// base path for rpcx server, for example com/example/rpcx
+	// base path for frpc server, for example com/example/frpc
 	BasePath string
 	// Registered services
 	Services       []string
@@ -58,7 +58,7 @@ func (p *ConsulRegister) Start() error {
 		p.BasePath = p.BasePath[1:]
 	}
 
-	err := p.store.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true})
+	err := p.store.Put(p.BasePath, []byte("frpc_path"), &store.WriteOptions{IsDir: true})
 	if err != nil {
 		log.Errorf("cannot create etcd path %s: %v", p.BasePath, err)
 		return err
@@ -116,7 +116,7 @@ func (p *ConsulRegister) Register(name string, rcvr interface{}, metadata string
 		p.store = store
 	}
 
-	err = p.store.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true})
+	err = p.store.Put(p.BasePath, []byte("frpc_path"), &store.WriteOptions{IsDir: true})
 	if err != nil {
 		log.Errorf("cannot create etcd path %s: %v", p.BasePath, err)
 		return err

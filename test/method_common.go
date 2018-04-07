@@ -24,6 +24,11 @@ func (t *Arith) Mul(ctx context.Context, args *Args, reply *Reply) error {
 	return nil
 }
 
+func (t *Arith) Add(ctx context.Context, args *Args, reply *Reply) error {
+	reply.C = args.A + args.B
+	return nil
+}
+
 type Arith2 int
 
 func (t *Arith2) Mul(ctx context.Context, args *Args, reply *Reply) error {

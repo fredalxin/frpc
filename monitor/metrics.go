@@ -3,11 +3,13 @@ package monitor
 import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/vrischmann/go-metrics-influxdb"
+	"github.com/cyberdelia/go-metrics-graphite"
 	"time"
 	"net"
 	"context"
 	"frpc/protocol"
-	"frpc/server"
+	//"frpc/server"
+	"frpc/core"
 )
 
 type Metric struct {
@@ -15,11 +17,7 @@ type Metric struct {
 	Prefix   string
 }
 
-func NewMetrics(registry metrics.Registry) *Metric {
-	return &Metric{Registry: registry}
-}
-
-func NewDefaultMetrics() *Metric {
+func NewMetric() *Metric {
 	return &Metric{Registry: metrics.DefaultRegistry}
 }
 
@@ -65,7 +63,7 @@ func (p *Metric) PostResponse(ctx context.Context, req *protocol.Message, res *p
 	m := metrics.GetOrRegisterMeter(p.withPrefix("service."+sp+"."+sm+".Write_Qps"), p.Registry)
 	m.Mark(1)
 
-	t := ctx.Value(server.StartRequestContextKey).(int64)
+	t := ctx.Value(core.StartRequestContextKey).(int64)
 
 	if t > 0 {
 		t = time.Now().UnixNano() - t
@@ -79,12 +77,19 @@ func (p *Metric) PostResponse(ctx context.Context, req *protocol.Message, res *p
 	return nil
 }
 
+func (p *Metric) CaptureRunTimeStats() (*Metric) {
+	metrics.RegisterRuntimeMemStats(p.Registry)
+	go metrics.CaptureRuntimeMemStats(p.Registry, time.Second)
+	return p
+}
+
 // Log reports metrics into logs.
 //
 // p.Log( 5 * time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 //
-func (p *Metric) Log(freq time.Duration, l metrics.Logger) {
+func (p *Metric) Log(freq time.Duration, l metrics.Logger) (*Metric) {
 	go metrics.Log(p.Registry, freq, l)
+	return p
 }
 
 // Graphite reports metrics into graphite.
@@ -92,14 +97,17 @@ func (p *Metric) Log(freq time.Duration, l metrics.Logger) {
 // 	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
 //  p.Graphite(10e9, "metrics", addr)
 //
-func (p *Metric) Graphite(freq time.Duration, prefix string, addr *net.TCPAddr) {
-	go metrics.Graphite(p.Registry, freq, prefix, addr)
+func (p *Metric) Graphite(freq time.Duration, prefix, url string) (*Metric) {
+	addr, _ := net.ResolveTCPAddr("tcp", url)
+	go graphite.Graphite(p.Registry, freq, prefix, addr)
+	return p
 }
 
 // InfluxDB reports metrics into influxdb.
 //
 // 	p.InfluxDB(10e9, "127.0.0.1:8086","metrics", "test","test"})
 //
-func (p *Metric) InfluxDB(freq time.Duration, url, database, username, password string) {
+func (p *Metric) InfluxDB(freq time.Duration, url, database, username, password string) (*Metric) {
 	go influxdb.InfluxDB(p.Registry, freq, url, database, username, password)
+	return p
 }

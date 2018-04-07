@@ -20,12 +20,6 @@ import (
 
 var ErrServerClosed = errors.New("http: Server closed")
 
-type contextKey struct {
-	name string
-}
-
-var StartRequestContextKey = &contextKey{"start-parse-request"}
-
 const (
 	// ReaderBuffsize is used for bufio reader.
 	ReaderBuffsize = 1024
@@ -246,6 +240,8 @@ func (server *Server) serveConn(conn net.Conn) {
 		if server.option.WriteTimeout != 0 {
 			conn.SetWriteDeadline(t.Add(server.option.WriteTimeout))
 		}
+		//record request time
+		ctx = context.WithValue(ctx, core.StartRequestContextKey, time.Now().UnixNano())
 		//handle request
 		go func() {
 			if req.IsHeartbeat() {

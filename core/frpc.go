@@ -22,3 +22,5 @@ var ReqMetaDataKey = ContextKey("__req_metadata")
 
 // ResMetaDataKey is used to set metatdata in context of responses.
 var ResMetaDataKey = ContextKey("__res_metadata")
+
+var StartRequestContextKey = ContextKey("start-parse-request")

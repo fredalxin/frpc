@@ -2,7 +2,6 @@ package server
 
 import (
 	"frpc/monitor"
-	"github.com/rcrowley/go-metrics"
 	"net"
 	"context"
 	"frpc/protocol"
@@ -15,21 +14,15 @@ type MonitorServer struct {
 	monitors []monitor.Monitor
 }
 
-func (s *Server) Metrics(registry metrics.Registry) *Server {
+func (s *Server) Metric(metric *monitor.Metric) *Server {
 	//s.monitor.metric = *monitor.NewMetrics(registry)
-	s.monitor.monitors = append(s.monitor.monitors, monitor.NewMetrics(registry))
+	s.monitor.monitors = append(s.monitor.monitors, metric)
 	return s
 }
 
-func (s *Server) DefaultMetrics() *Server {
-	//s.monitor.metric = *monitor.NewDefaultMetrics()
-	s.monitor.monitors = append(s.monitor.monitors, monitor.NewDefaultMetrics())
-	return s
-}
-
-func (s *Server) Trace(registry metrics.Registry) *Server {
+func (s *Server) Trace(trace *monitor.Trace) *Server {
 	//s.monitor.trace = *monitor.NewTrace()
-	s.monitor.monitors = append(s.monitor.monitors, monitor.NewTrace())
+	s.monitor.monitors = append(s.monitor.monitors, trace)
 	return s
 }
 

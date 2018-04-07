@@ -7,39 +7,17 @@ import (
 	"frpc/server"
 	"frpc/core"
 	"frpc/client"
+	"frpc/monitor"
+	"os"
 	"log"
-	"frpc/circuit"
-	"errors"
 )
 
-func TestLocalCircuitBreaker(t *testing.T) {
-	count := -1
-	fn := func() error {
-		count++
-		if count >= 5 && count < 10 {
-			return nil
-		}
-
-		return errors.New("test error")
-	}
-
-	cb := circuit.NewSimpleCircuitBreaker(5, 100*time.Millisecond)
-
-	for i := 0; i < 25; i++ {
-		err := cb.Call(fn, 200*time.Millisecond)
-		log.Printf("got err: %v", err)
-		if i == 9 { // expired
-			time.Sleep(150 * time.Millisecond)
-		}
-	}
-
-}
-
-func TestSimpleBreaker(t *testing.T) {
+func TestMonitorMetricLog(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(ArithB), "ArithB", "")
+		Metric(monitor.NewMetric().Log(5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))).
+		RegisterName(new(Arith), "Arith", "")
 
 	go s.ServeProxy()
 
@@ -48,10 +26,8 @@ func TestSimpleBreaker(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
-		Selector(core.Random).
-		FailMode(core.FailFast).
-		Breaker(circuit.NewSimpleCircuitBreaker(5, 100*time.Millisecond),0)
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
+		Selector(core.Random)
 
 	defer client.Close()
 
@@ -62,24 +38,45 @@ func TestSimpleBreaker(t *testing.T) {
 
 	reply := &Reply{}
 
-	for i := 0; i < 25; i++ {
-		err := client.CallProxy(context.Background(), "Mul", args, reply)
-		if err == nil {
-			err = errors.New("success")
+	go func() {
+		for {
+			err := client.CallProxy(context.Background(), "Mul", args, reply)
+			if err != nil {
+				t.Fatalf("failed to call: %v", err)
+			}
+
+			if reply.C != 200 {
+				t.Fatalf("expect 200 but got %d", reply.C)
+			}
+
+			time.Sleep(time.Duration(500) * time.Microsecond)
 		}
-		log.Printf("got err: %v", err)
-		if i == 9 { // expired
-			time.Sleep(150 * time.Millisecond)
+	}()
+
+	go func() {
+		for {
+			err := client.CallProxy(context.Background(), "Add", args, reply)
+			if err != nil {
+				t.Fatalf("failed to call: %v", err)
+			}
+
+			if reply.C != 200 {
+				t.Fatalf("expect 30 but got %d", reply.C)
+			}
+
+			time.Sleep(time.Duration(500) * time.Microsecond)
 		}
-	}
+	}()
+
+	select {}
 }
 
-
-func TestThresholdBreaker(t *testing.T) {
+func TestMonitorMetricGraphite(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(ArithB), "ArithB", "")
+		Metric(monitor.NewMetric().CaptureRunTimeStats().Graphite(1e9, "frpc.services.host.127_0_0_1", "127.0.0.1:2003")).
+		RegisterName(new(Arith), "Arith", "")
 
 	go s.ServeProxy()
 
@@ -88,10 +85,8 @@ func TestThresholdBreaker(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
-		Selector(core.Random).
-		FailMode(core.FailFast).
-		Breaker(circuit.NewThresholdBreaker(5),0)
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
+		Selector(core.Random)
 
 	defer client.Close()
 
@@ -102,23 +97,45 @@ func TestThresholdBreaker(t *testing.T) {
 
 	reply := &Reply{}
 
-	for i := 0; i < 25; i++ {
-		err := client.CallProxy(context.Background(), "Mul", args, reply)
-		if err == nil {
-			err = errors.New("success")
+	go func() {
+		for {
+			err := client.CallProxy(context.Background(), "Mul", args, reply)
+			if err != nil {
+				t.Fatalf("failed to call: %v", err)
+			}
+
+			if reply.C != 200 {
+				t.Fatalf("expect 200 but got %d", reply.C)
+			}
+
+			time.Sleep(time.Duration(500) * time.Microsecond)
 		}
-		log.Printf("got err: %v", err)
-		if i == 9 { // expired
-			time.Sleep(150 * time.Millisecond)
+	}()
+
+	go func() {
+		for {
+			err := client.CallProxy(context.Background(), "Add", args, reply)
+			if err != nil {
+				t.Fatalf("failed to call: %v", err)
+			}
+
+			if reply.C != 200 {
+				t.Fatalf("expect 30 but got %d", reply.C)
+			}
+
+			time.Sleep(time.Duration(500) * time.Microsecond)
 		}
-	}
+	}()
+
+	select {}
 }
 
-func TestConsecutiveBreaker(t *testing.T) {
+func TestMonitorTrace(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(ArithB), "ArithB", "")
+		Trace(monitor.NewTrace().ExportListner(":8088")).
+		RegisterName(new(Arith), "Arith", "")
 
 	go s.ServeProxy()
 
@@ -127,10 +144,8 @@ func TestConsecutiveBreaker(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	client := client.NewClient().
-		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
-		Selector(core.Random).
-		FailMode(core.FailFast).
-		Breaker(circuit.NewConsecutiveBreaker(5),0)
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
+		Selector(core.Random)
 
 	defer client.Close()
 
@@ -141,54 +156,35 @@ func TestConsecutiveBreaker(t *testing.T) {
 
 	reply := &Reply{}
 
-	for i := 0; i < 25; i++ {
-		err := client.CallProxy(context.Background(), "Mul", args, reply)
-		if err == nil {
-			err = errors.New("success")
+	go func() {
+		for {
+			err := client.CallProxy(context.Background(), "Mul", args, reply)
+			if err != nil {
+				t.Fatalf("failed to call: %v", err)
+			}
+
+			if reply.C != 200 {
+				t.Fatalf("expect 200 but got %d", reply.C)
+			}
+
+			time.Sleep(time.Duration(500) * time.Microsecond)
 		}
-		log.Printf("got err: %v", err)
-		if i == 9 { // expired
-			time.Sleep(150 * time.Millisecond)
+	}()
+
+	go func() {
+		for {
+			err := client.CallProxy(context.Background(), "Add", args, reply)
+			if err != nil {
+				t.Fatalf("failed to call: %v", err)
+			}
+
+			if reply.C != 200 {
+				t.Fatalf("expect 30 but got %d", reply.C)
+			}
+
+			time.Sleep(time.Duration(500) * time.Microsecond)
 		}
-	}
-}
+	}()
 
-
-func TestRateBreaker(t *testing.T) {
-	s, _ := server.
-		NewServer().
-		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(ArithB), "ArithB", "")
-
-	go s.ServeProxy()
-
-	defer s.Close()
-
-	time.Sleep(500 * time.Millisecond)
-
-	client := client.NewClient().
-		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
-		Selector(core.Random).
-		FailMode(core.FailFast).
-		Breaker(circuit.NewRateBreaker(0.5,10),0)
-
-	defer client.Close()
-
-	args := &Args{
-		A: 10,
-		B: 20,
-	}
-
-	reply := &Reply{}
-
-	for i := 0; i < 25; i++ {
-		err := client.CallProxy(context.Background(), "Mul", args, reply)
-		if err == nil {
-			err = errors.New("success")
-		}
-		log.Printf("got err: %v", err)
-		if i == 9 { // expired
-			time.Sleep(150 * time.Millisecond)
-		}
-	}
+	select {}
 }

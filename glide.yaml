@@ -23,3 +23,5 @@ import:
   version: ^0.7.0
 - package: github.com/rcrowley/go-metrics
 - package: github.com/vrischmann/go-metrics-influxdb
+- package: github.com/cyberdelia/go-metrics-graphite
+

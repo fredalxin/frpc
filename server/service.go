@@ -9,7 +9,6 @@ import (
 	"frpc/log"
 	"context"
 	"fmt"
-	"frpc/monitor"
 )
 
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()

@@ -4,7 +4,7 @@ import:
   subpackages:
   - proto
 - package: github.com/vmihailenco/msgpack
-  version: ^3.2.3
+  version: ^3.3.0
 - package: github.com/docker/libkv
   version: ^0.2.1
   subpackages:
@@ -24,4 +24,5 @@ import:
 - package: github.com/rcrowley/go-metrics
 - package: github.com/vrischmann/go-metrics-influxdb
 - package: github.com/cyberdelia/go-metrics-graphite
+- package: github.com/juju/ratelimit
 

@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 	"context"
-	fastping "github.com/tatsushid/go-fastping"
+	"github.com/tatsushid/go-fastping"
 )
 
 type pingSelector struct {

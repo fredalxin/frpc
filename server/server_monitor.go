@@ -9,20 +9,21 @@ import (
 )
 
 type MonitorServer struct {
-	//metric   monitor.Metric
-	//trace    monitor.Trace
 	monitors []monitor.Monitor
 }
 
 func (s *Server) Metric(metric *monitor.Metric) *Server {
-	//s.monitor.metric = *monitor.NewMetrics(registry)
 	s.monitor.monitors = append(s.monitor.monitors, metric)
 	return s
 }
 
 func (s *Server) Trace(trace *monitor.Trace) *Server {
-	//s.monitor.trace = *monitor.NewTrace()
 	s.monitor.monitors = append(s.monitor.monitors, trace)
+	return s
+}
+
+func (s *Server) RateLimit(rateLimit *monitor.RateLimit) *Server {
+	s.monitor.monitors = append(s.monitor.monitors, rateLimit)
 	return s
 }
 

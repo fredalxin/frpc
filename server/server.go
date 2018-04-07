@@ -151,7 +151,10 @@ func (s *Server) serveListener(ln net.Listener) error {
 		//if s.monitor.trace != (monitor.Trace{}) {
 		//	s.monitor.trace.HandleConn(conn)
 		//}
-		s.monitor.HandleConn(conn)
+		conn, ok := s.monitor.HandleConn(conn)
+		if !ok {
+			continue
+		}
 
 		go s.serveConn(conn)
 	}

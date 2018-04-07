@@ -188,3 +188,49 @@ func TestMonitorTrace(t *testing.T) {
 
 	select {}
 }
+
+func TestMonitorRateLimit(t *testing.T) {
+	s, _ := server.
+		NewServer().
+		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
+		RateLimit(monitor.NewConnConcurrentLimit(1000*time.Hour, 5)).
+		RegisterName(new(Arith), "Arith", "")
+
+	go s.ServeProxy()
+
+	defer s.Close()
+
+	time.Sleep(500 * time.Millisecond)
+
+	client := client.NewClient().
+		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
+		Selector(core.Random)
+
+	defer client.Close()
+
+	args := &Args{
+		A: 10,
+		B: 20,
+	}
+
+	reply := &Reply{}
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			err := client.CallProxy(context.Background(), "Mul", args, reply)
+			if err != nil {
+				t.Fatalf("failed to call: %v", err)
+			}
+
+			if reply.C != 200 {
+				t.Fatalf("expect 200 but got %d", reply.C)
+			}
+
+			log.Print(reply.C)
+		}()
+
+	}
+
+	select {}
+
+}

@@ -31,21 +31,20 @@ type service struct {
 }
 
 func (s *Server) Register(rcvr interface{}) (*Server, error) {
-	return s, s.register(rcvr, "", false)
+	name := reflect.Indirect(reflect.ValueOf(rcvr)).Type().Name()
+	return s.RegisterWithMeta(rcvr, name, "")
 }
 
-func (s *Server) RegisterName(rcvr interface{}, name string, metadata string) (*Server, error) {
+func (s *Server) RegisterWithName(rcvr interface{}, name string) (*Server, error) {
+	return s.RegisterWithMeta(rcvr, name, "")
+}
+
+func (s *Server) RegisterWithMeta(rcvr interface{}, name string, metadata string) (*Server, error) {
 	if s.registry.Registry != nil {
 		s.registry.Registry.Register(name, rcvr, metadata)
 	}
 	//todo monitor
-	//if s.monitor.metric != (monitor.Metric{}) {
-	//	s.monitor.metric.Register(name, rcvr, metadata)
-	//}
-	//if s.monitor.trace != (monitor.Trace{}) {
-	//	s.monitor.trace.Register(name, rcvr, metadata)
-	//}
-	s.monitor.Register(name,rcvr,metadata)
+	s.monitor.Register(name, rcvr, metadata)
 
 	return s, s.register(rcvr, name, true)
 }

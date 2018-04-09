@@ -180,7 +180,7 @@ func initTwoServer() (*server.Server, *server.Server) {
 	s1, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(Arith), "Arith", "")
+		RegisterWithName(new(Arith), "Arith")
 
 	go s1.ServeProxy()
 
@@ -189,7 +189,7 @@ func initTwoServer() (*server.Server, *server.Server) {
 	s2, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8973", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(Arith2), "Arith", "")
+		RegisterWithName(new(Arith2), "Arith")
 
 	go s2.ServeProxy()
 
@@ -202,7 +202,7 @@ func initTwoWeightedServer() (*server.Server, *server.Server) {
 	s1, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(Arith), "Arith", "weight=1")
+		RegisterWithMeta(new(Arith), "Arith", "weight=1")
 
 	go s1.ServeProxy()
 
@@ -211,7 +211,7 @@ func initTwoWeightedServer() (*server.Server, *server.Server) {
 	s2, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8973", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(Arith2), "Arith", "weight=7")
+		RegisterWithMeta(new(Arith2), "Arith", "weight=7")
 
 	go s2.ServeProxy()
 

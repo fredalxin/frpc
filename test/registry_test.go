@@ -13,7 +13,7 @@ func TestETCD(t *testing.T) {
 	s := server.NewServer().
 		Registry(core.Etcd, "/frpc_test", "tcp@localhost:8972", []string{"localhost:2379"}, time.Minute)
 
-	s.RegisterName(new(Arith), "Arith", "")
+	s.Register(new(Arith))
 	go s.Serve("tcp", "127.0.0.1:8972")
 	defer s.Close()
 
@@ -47,7 +47,7 @@ func TestCONSUL(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(Arith), "Arith", "")
+		Register(new(Arith))
 
 	go s.ServeProxy()
 

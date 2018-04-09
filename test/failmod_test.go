@@ -101,7 +101,7 @@ func initTwoFailServer() (*server.Server, *server.Server) {
 	s1, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(ArithF), "ArithF", "")
+		RegisterWithName(new(ArithF), "ArithF")
 
 	go s1.ServeProxy()
 
@@ -110,7 +110,7 @@ func initTwoFailServer() (*server.Server, *server.Server) {
 	s2, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8973", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(Arith), "ArithF", "")
+		RegisterWithName(new(Arith), "ArithF")
 
 	go s2.ServeProxy()
 

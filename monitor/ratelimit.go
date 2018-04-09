@@ -6,6 +6,7 @@ import (
 	"github.com/juju/ratelimit"
 	"context"
 	"frpc/protocol"
+	"frpc/log"
 )
 
 type RateLimit struct {
@@ -20,7 +21,8 @@ func NewConnConcurrentLimit(fillInterval time.Duration, capacity int64) *RateLim
 	return &RateLimit{
 		FillInterval: fillInterval,
 		Capacity:     capacity,
-		bucket:       tb}
+		bucket:       tb,
+	}
 }
 
 func (r *RateLimit) Register(name string, rcvr interface{}, metadata string) error {
@@ -29,10 +31,16 @@ func (r *RateLimit) Register(name string, rcvr interface{}, metadata string) err
 
 func (r *RateLimit) HandleConn(conn net.Conn) (net.Conn, bool) {
 	i := r.bucket.TakeAvailable(1)
-	return conn, i > 0
+	if i > 0 {
+		return conn, true
+	} else {
+		log.Error("conn out of limit")
+		return conn, false
+	}
 }
 
 func (r *RateLimit) PostRequest(ctx context.Context, req *protocol.Message, err error) error {
+	//todo
 	return nil
 }
 

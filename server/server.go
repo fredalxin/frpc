@@ -322,12 +322,6 @@ func (s *Server) decodeRequest(ctx context.Context, r io.Reader) (req *protocol.
 	req = protocol.GetMsgs()
 	err = req.Decode(r)
 	//todo monitor
-	//if s.monitor.metric != (monitor.Metric{}) {
-	//	s.monitor.metric.PostRequest(ctx, req, err)
-	//}
-	//if s.monitor.trace != (monitor.Trace{}) {
-	//	s.monitor.trace.PostRequest(ctx, req, err)
-	//}
 	s.monitor.PostRequest(ctx, req, err)
 	return req, err
 }

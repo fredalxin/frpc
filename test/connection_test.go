@@ -27,7 +27,7 @@ func TestKcp(t *testing.T) {
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "kcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		WithBlockCrypt(bc).
-		RegisterName(new(Arith), "Arith", "")
+		Register(new(Arith))
 
 	go s.ServeProxy()
 	defer s.Close()
@@ -71,7 +71,7 @@ func TestQuic(t *testing.T) {
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "quic@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		WithTlsConfig(serverConf).
-		RegisterName(new(Arith), "Arith", "")
+		Register(new(Arith))
 
 	go s.ServeProxy()
 	defer s.Close()

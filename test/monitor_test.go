@@ -17,7 +17,7 @@ func TestMonitorMetricLog(t *testing.T) {
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		Metric(monitor.NewMetric().Log(5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))).
-		RegisterName(new(Arith), "Arith", "")
+		Register(new(Arith))
 
 	go s.ServeProxy()
 
@@ -76,7 +76,7 @@ func TestMonitorMetricGraphite(t *testing.T) {
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		Metric(monitor.NewMetric().CaptureRunTimeStats().Graphite(1e9, "frpc.services.host.127_0_0_1", "127.0.0.1:2003")).
-		RegisterName(new(Arith), "Arith", "")
+		Register(new(Arith))
 
 	go s.ServeProxy()
 
@@ -135,7 +135,7 @@ func TestMonitorTrace(t *testing.T) {
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
 		Trace(monitor.NewTrace().ExportListner(":8088")).
-		RegisterName(new(Arith), "Arith", "")
+		Register(new(Arith))
 
 	go s.ServeProxy()
 
@@ -193,20 +193,14 @@ func TestMonitorRateLimit(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RateLimit(monitor.NewConnConcurrentLimit(1000*time.Hour, 5)).
-		RegisterName(new(Arith), "Arith", "")
+		RateLimit(monitor.NewConnConcurrentLimit(1000*time.Millisecond, 5)).
+		Register(new(Arith))
 
 	go s.ServeProxy()
 
 	defer s.Close()
 
 	time.Sleep(500 * time.Millisecond)
-
-	client := client.NewClient().
-		Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
-		Selector(core.Random)
-
-	defer client.Close()
 
 	args := &Args{
 		A: 10,
@@ -217,6 +211,12 @@ func TestMonitorRateLimit(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		go func() {
+			client := client.NewClient().
+				Discovery(core.Consul, "/frpc_test", "Arith", []string{"localhost:32787"}).
+				Selector(core.Random)
+
+			defer client.Close()
+
 			err := client.CallProxy(context.Background(), "Mul", args, reply)
 			if err != nil {
 				t.Fatalf("failed to call: %v", err)

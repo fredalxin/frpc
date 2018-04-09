@@ -39,7 +39,7 @@ func TestSimpleBreaker(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(ArithB), "ArithB", "")
+		Register(new(ArithB))
 
 	go s.ServeProxy()
 
@@ -79,7 +79,7 @@ func TestThresholdBreaker(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(ArithB), "ArithB", "")
+		Register(new(ArithB))
 
 	go s.ServeProxy()
 
@@ -118,7 +118,7 @@ func TestConsecutiveBreaker(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(ArithB), "ArithB", "")
+		Register(new(ArithB))
 
 	go s.ServeProxy()
 
@@ -158,7 +158,7 @@ func TestRateBreaker(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RegisterName(new(ArithB), "ArithB", "")
+		Register(new(ArithB))
 
 	go s.ServeProxy()
 

@@ -1,16 +1,16 @@
 package registry
 
 import (
-	"sync"
-	"time"
-	"github.com/docker/libkv/store"
-	"net/url"
-	"github.com/docker/libkv"
-	"strings"
+	"errors"
 	"fmt"
 	"frpc/log"
-	"errors"
+	"github.com/docker/libkv"
+	"github.com/docker/libkv/store"
 	"github.com/docker/libkv/store/consul"
+	"net/url"
+	"strings"
+	"sync"
+	"time"
 )
 
 func init() {

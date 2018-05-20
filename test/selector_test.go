@@ -1,12 +1,12 @@
 package test
 
 import (
+	"context"
+	"frpc/client"
+	"frpc/core"
+	"frpc/server"
 	"testing"
 	"time"
-	"context"
-	"frpc/server"
-	"frpc/core"
-	"frpc/client"
 )
 
 func TestRandomSelector(t *testing.T) {
@@ -91,7 +91,6 @@ func TestHashSelector(t *testing.T) {
 	}
 
 }
-
 
 func TestWeightedSelector(t *testing.T) {
 
@@ -196,7 +195,6 @@ func initTwoServer() (*server.Server, *server.Server) {
 	time.Sleep(500 * time.Millisecond)
 	return s1, s2
 }
-
 
 func initTwoWeightedServer() (*server.Server, *server.Server) {
 	s1, _ := server.

@@ -1,8 +1,8 @@
 package selector
 
 import (
-	"hash/fnv"
 	"fmt"
+	"hash/fnv"
 )
 
 // Hash consistently chooses a hash bucket number in the range [0, numBuckets) for the given key. numBuckets must be >= 1.

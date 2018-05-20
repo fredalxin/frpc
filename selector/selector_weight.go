@@ -1,10 +1,11 @@
 package selector
 
 import (
+	"context"
 	"net/url"
 	"strconv"
-	"context"
 )
+
 type weightedSelector struct {
 	servers []*Weighted
 }

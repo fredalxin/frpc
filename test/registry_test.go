@@ -1,12 +1,12 @@
 package test
 
 import (
-	"testing"
-	"time"
-	"frpc/server"
 	"context"
 	"frpc/client"
 	"frpc/core"
+	"frpc/server"
+	"testing"
+	"time"
 )
 
 func TestETCD(t *testing.T) {
@@ -78,5 +78,3 @@ func TestCONSUL(t *testing.T) {
 
 	println(reply.C)
 }
-
-

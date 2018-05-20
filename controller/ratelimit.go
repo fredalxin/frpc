@@ -1,12 +1,12 @@
 package controller
 
 import (
+	"context"
+	"frpc/log"
+	"frpc/protocol"
+	"github.com/juju/ratelimit"
 	"net"
 	"time"
-	"github.com/juju/ratelimit"
-	"context"
-	"frpc/protocol"
-	"frpc/log"
 )
 
 type RateLimit struct {

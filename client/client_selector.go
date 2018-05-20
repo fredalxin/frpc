@@ -1,9 +1,9 @@
 package client
 
 import (
-	"frpc/selector"
-	"frpc/log"
 	"frpc/core"
+	"frpc/log"
+	"frpc/selector"
 )
 
 func (c *Client) Selector(selectorMode core.SelectMode) *Client {

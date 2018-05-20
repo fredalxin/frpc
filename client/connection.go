@@ -1,14 +1,14 @@
 package client
 
 import (
-	"net"
-	"time"
 	"bufio"
-	"frpc/log"
-	"io"
-	"net/http"
 	"errors"
 	"frpc/core"
+	"frpc/log"
+	"io"
+	"net"
+	"net/http"
+	"time"
 )
 
 const (

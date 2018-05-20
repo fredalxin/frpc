@@ -1,10 +1,10 @@
 package server
 
 import (
-	"net"
-	quic "github.com/marten-seemann/quic-conn"
-	"errors"
 	"crypto/tls"
+	"errors"
+	quic "github.com/marten-seemann/quic-conn"
+	"net"
 )
 
 func makeQuicListener(s *Server, address string) (ln net.Listener, err error) {

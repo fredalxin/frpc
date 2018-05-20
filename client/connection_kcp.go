@@ -1,9 +1,9 @@
 package client
 
 import (
-	"net"
-	kcp "github.com/xtaci/kcp-go"
 	"frpc/log"
+	kcp "github.com/xtaci/kcp-go"
+	"net"
 )
 
 func newKcpConn(c *Client, network string, address string) (net.Conn, error) {

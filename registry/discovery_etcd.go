@@ -1,13 +1,13 @@
 package registry
 
 import (
-	"sync"
-	"github.com/docker/libkv/store"
-	"github.com/docker/libkv"
 	"frpc/log"
-	"strings"
-	"time"
+	"github.com/docker/libkv"
+	"github.com/docker/libkv/store"
 	"github.com/docker/libkv/store/etcd"
+	"strings"
+	"sync"
+	"time"
 )
 
 func init() {

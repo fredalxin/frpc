@@ -1,10 +1,10 @@
 package client
 
 import (
-	"time"
-	"frpc/protocol"
 	"crypto/tls"
 	"frpc/core"
+	"frpc/protocol"
+	"time"
 )
 
 type Option struct {
@@ -20,9 +20,9 @@ type Option struct {
 	failMode          core.FailMode
 	Breaker           BreakerClient
 	//for quic
-	TLSConfig         *tls.Config
+	TLSConfig *tls.Config
 	//for kcp
-	Block             interface{}
+	Block interface{}
 }
 
 func (c *Client) Serialize(serializeType protocol.SerializeType) *Client {

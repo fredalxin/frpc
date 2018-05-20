@@ -1,10 +1,10 @@
 package circuit
 
 import (
-	"time"
-	"sync/atomic"
 	"errors"
 	cir "github.com/rubyist/circuitbreaker"
+	"sync/atomic"
+	"time"
 )
 
 var (

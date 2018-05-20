@@ -2,10 +2,10 @@ package test
 
 import (
 	"context"
-	"time"
 	"errors"
 	"fmt"
 	"frpc/core"
+	"time"
 )
 
 type Args struct {
@@ -41,7 +41,6 @@ type ArithF int
 func (t *ArithF) Mul(ctx context.Context, args *Args, reply *Reply) error {
 	return errors.New("unknown error")
 }
-
 
 type PBArith int
 

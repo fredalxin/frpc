@@ -1,14 +1,14 @@
 package server
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"frpc/log"
 	"reflect"
 	"sync"
 	"unicode"
 	"unicode/utf8"
-	"frpc/log"
-	"context"
-	"fmt"
 )
 
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
@@ -44,7 +44,7 @@ func (s *Server) RegisterWithMeta(rcvr interface{}, name string, metadata string
 		s.registry.Registry.Register(name, rcvr, metadata)
 	}
 	//todo controller
-	s.monitor.Register(name, rcvr, metadata)
+	s.controller.Register(name, rcvr, metadata)
 
 	return s, s.register(rcvr, name, true)
 }

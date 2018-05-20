@@ -1,12 +1,12 @@
 package registry
 
 import (
-	"sync"
+	"frpc/log"
+	"github.com/docker/libkv"
 	"github.com/docker/libkv/store"
 	"github.com/docker/libkv/store/consul"
-	"github.com/docker/libkv"
-	"frpc/log"
 	"strings"
+	"sync"
 	"time"
 )
 

@@ -1,16 +1,16 @@
 package server
 
 import (
-	"time"
 	"crypto/tls"
+	"time"
 )
 
 type Option struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
-	configs  map[string]interface{}
-	tlsConfig *tls.Config
-	rpcPath string
+	configs      map[string]interface{}
+	tlsConfig    *tls.Config
+	rpcPath      string
 }
 
 func (s *Server) ReadTimeout(timeout time.Duration) *Server {

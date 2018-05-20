@@ -1,8 +1,8 @@
 package codec
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	pb "github.com/golang/protobuf/proto"
 	mp "github.com/vmihailenco/msgpack"
 )

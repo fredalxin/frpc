@@ -1,8 +1,8 @@
 package server
 
 import (
-	"net"
 	"fmt"
+	"net"
 )
 
 var makeListeners = make(map[string]MakeListener)
@@ -16,7 +16,6 @@ func init() {
 
 type MakeListener func(s *Server, address string) (ln net.Listener, err error)
 
-
 func makeTcpListener(s *Server, address string) (ln net.Listener, err error) {
 	return net.Listen("tcp", address)
 }
@@ -28,4 +27,3 @@ func (s *Server) makeListener(network, address string) (ln net.Listener, err err
 	}
 	return ml(s, address)
 }
-

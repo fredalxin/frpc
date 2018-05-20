@@ -1,9 +1,9 @@
 package server
 
 import (
+	"frpc/core"
 	"frpc/registry"
 	"time"
-	"frpc/core"
 )
 
 type RegistryServer struct {

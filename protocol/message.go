@@ -1,11 +1,11 @@
 package protocol
 
 import (
-	"io"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"frpc/util"
-	"bytes"
+	"io"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 type MessageType byte
 
 const (
-	Request  MessageType = iota
+	Request MessageType = iota
 	Response
 )
 
@@ -221,14 +221,14 @@ func (message *Message) Decode(reader io.Reader) error {
 	n = nEnd
 
 	// parse serviceMethod
-	l = binary.BigEndian.Uint32(data[n: n+4])
+	l = binary.BigEndian.Uint32(data[n : n+4])
 	n = n + 4
 	nEnd = n + int(l)
 	message.ServiceMethod = util.ByteToString(data[n:nEnd])
 	n = nEnd
 
 	// parse meta
-	l = binary.BigEndian.Uint32(data[n: n+4])
+	l = binary.BigEndian.Uint32(data[n : n+4])
 	n = n + 4
 	nEnd = n + int(l)
 
@@ -241,7 +241,7 @@ func (message *Message) Decode(reader io.Reader) error {
 	n = nEnd
 
 	// parse payload
-	l = binary.BigEndian.Uint32(data[n: n+4])
+	l = binary.BigEndian.Uint32(data[n : n+4])
 	_ = l
 	n = n + 4
 	message.Payload = data[n:]
@@ -255,21 +255,21 @@ func decodeMetadata(l uint32, data []byte) (map[string]string, error) {
 	for n < l {
 		// parse one key and value
 		// key
-		sl := binary.BigEndian.Uint32(data[n: n+4])
+		sl := binary.BigEndian.Uint32(data[n : n+4])
 		n = n + 4
 		if n+sl > l-4 {
 			return m, ErrMetaKVMissing
 		}
-		k := util.ByteToString(data[n: n+sl])
+		k := util.ByteToString(data[n : n+sl])
 		n = n + sl
 
 		// value
-		sl = binary.BigEndian.Uint32(data[n: n+4])
+		sl = binary.BigEndian.Uint32(data[n : n+4])
 		n = n + 4
 		if n+sl > l {
 			return m, ErrMetaKVMissing
 		}
-		v := util.ByteToString(data[n: n+sl])
+		v := util.ByteToString(data[n : n+sl])
 		n = n + sl
 		m[k] = v
 	}

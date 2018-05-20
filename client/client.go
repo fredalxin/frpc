@@ -1,20 +1,20 @@
 package client
 
 import (
-	"sync"
 	"bufio"
-	"frpc/protocol"
-	"time"
-	"net"
-	"frpc/log"
-	"frpc/util"
-	"frpc/core"
-	"errors"
-	"io"
 	"context"
-	"frpc/selector"
-	"strings"
+	"errors"
+	"frpc/core"
 	err "frpc/error"
+	"frpc/log"
+	"frpc/protocol"
+	"frpc/selector"
+	"frpc/util"
+	"io"
+	"net"
+	"strings"
+	"sync"
+	"time"
 )
 
 type ServiceError string

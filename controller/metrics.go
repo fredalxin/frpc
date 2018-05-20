@@ -1,13 +1,13 @@
 package controller
 
 import (
-	"github.com/rcrowley/go-metrics"
-	"github.com/vrischmann/go-metrics-influxdb"
-	"github.com/cyberdelia/go-metrics-graphite"
-	"time"
-	"net"
 	"context"
 	"frpc/protocol"
+	"github.com/cyberdelia/go-metrics-graphite"
+	"github.com/rcrowley/go-metrics"
+	"github.com/vrischmann/go-metrics-influxdb"
+	"net"
+	"time"
 	//"frpc/server"
 	"frpc/core"
 )
@@ -77,7 +77,7 @@ func (p *Metric) PostResponse(ctx context.Context, req *protocol.Message, res *p
 	return nil
 }
 
-func (p *Metric) CaptureRunTimeStats() (*Metric) {
+func (p *Metric) CaptureRunTimeStats() *Metric {
 	metrics.RegisterRuntimeMemStats(p.Registry)
 	go metrics.CaptureRuntimeMemStats(p.Registry, time.Second)
 	return p
@@ -87,7 +87,7 @@ func (p *Metric) CaptureRunTimeStats() (*Metric) {
 //
 // p.Log( 5 * time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 //
-func (p *Metric) Log(freq time.Duration, l metrics.Logger) (*Metric) {
+func (p *Metric) Log(freq time.Duration, l metrics.Logger) *Metric {
 	go metrics.Log(p.Registry, freq, l)
 	return p
 }
@@ -97,7 +97,7 @@ func (p *Metric) Log(freq time.Duration, l metrics.Logger) (*Metric) {
 // 	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
 //  p.Graphite(10e9, "metrics", addr)
 //
-func (p *Metric) Graphite(freq time.Duration, prefix, url string) (*Metric) {
+func (p *Metric) Graphite(freq time.Duration, prefix, url string) *Metric {
 	addr, _ := net.ResolveTCPAddr("tcp", url)
 	go graphite.Graphite(p.Registry, freq, prefix, addr)
 	return p
@@ -107,7 +107,7 @@ func (p *Metric) Graphite(freq time.Duration, prefix, url string) (*Metric) {
 //
 // 	p.InfluxDB(10e9, "127.0.0.1:8086","metrics", "test","test"})
 //
-func (p *Metric) InfluxDB(freq time.Duration, url, database, username, password string) (*Metric) {
+func (p *Metric) InfluxDB(freq time.Duration, url, database, username, password string) *Metric {
 	go influxdb.InfluxDB(p.Registry, freq, url, database, username, password)
 	return p
 }

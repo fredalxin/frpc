@@ -1,8 +1,8 @@
 package core
 
 import (
-	"frpc/protocol"
 	"frpc/codec"
+	"frpc/protocol"
 )
 
 const DefaultRPCPath = "/_fprc_"

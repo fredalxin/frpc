@@ -2,8 +2,8 @@ package controller
 
 import (
 	"context"
-	"net"
 	"frpc/protocol"
+	"net"
 )
 
 type Controller interface {
@@ -12,4 +12,3 @@ type Controller interface {
 	PostRequest(ctx context.Context, req *protocol.Message, e error) error
 	PostResponse(ctx context.Context, req *protocol.Message, res *protocol.Message, err error) error
 }
-

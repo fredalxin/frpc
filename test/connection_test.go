@@ -1,17 +1,17 @@
 package test
 
 import (
+	"context"
+	"crypto/sha1"
+	"crypto/tls"
+	"frpc/client"
+	"frpc/core"
+	"frpc/log"
+	"frpc/server"
+	"github.com/xtaci/kcp-go"
+	"golang.org/x/crypto/pbkdf2"
 	"testing"
 	"time"
-	"frpc/server"
-	"golang.org/x/crypto/pbkdf2"
-	"crypto/sha1"
-	"github.com/xtaci/kcp-go"
-	"frpc/core"
-	"frpc/client"
-	"context"
-	"crypto/tls"
-	"frpc/log"
 )
 
 const cryptKey = "frpc-key"

@@ -1,12 +1,12 @@
 package selector
 
 import (
-	"time"
+	"context"
 	"math"
+	"math/rand"
 	"net/url"
 	"strconv"
-	"math/rand"
-	"context"
+	"time"
 )
 
 type geoSelector struct {

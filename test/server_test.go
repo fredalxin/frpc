@@ -2,13 +2,12 @@ package test
 
 import (
 	"context"
-	"testing"
 	"encoding/json"
-	"frpc/protocol"
 	"frpc/core"
+	"frpc/protocol"
 	"frpc/server"
+	"testing"
 )
-
 
 func TestHandleRequest(t *testing.T) {
 	//use jsoncodec

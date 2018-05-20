@@ -1,11 +1,11 @@
 package selector
 
 import (
-	"strings"
-	"net"
-	"time"
 	"context"
 	"github.com/tatsushid/go-fastping"
+	"net"
+	"strings"
+	"time"
 )
 
 type pingSelector struct {

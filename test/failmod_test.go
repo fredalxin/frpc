@@ -1,13 +1,13 @@
 package test
 
 import (
-	"time"
-	"frpc/server"
-	"frpc/core"
 	"context"
-	"testing"
 	"frpc/client"
+	"frpc/core"
+	"frpc/server"
 	"log"
+	"testing"
+	"time"
 )
 
 func TestFailTry(t *testing.T) {

@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"net"
 	"context"
 	"frpc/protocol"
 	"golang.org/x/net/trace"
+	"net"
 	"net/http"
 )
 
@@ -12,11 +12,10 @@ type Trace struct {
 }
 
 func NewTrace() *Trace {
-	return &Trace{
-	}
+	return &Trace{}
 }
 
-func (p *Trace) ExportListner(addr string) (*Trace) {
+func (p *Trace) ExportListner(addr string) *Trace {
 	go http.ListenAndServe(":8088", nil)
 	return p
 }

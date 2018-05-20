@@ -1,8 +1,8 @@
 package util
 
 import (
-	"compress/gzip"
 	"bytes"
+	"compress/gzip"
 	"io/ioutil"
 )
 

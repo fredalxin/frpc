@@ -1,8 +1,8 @@
 package registry
 
 import (
-	"time"
 	"frpc/core"
+	"time"
 )
 
 type Registry interface {

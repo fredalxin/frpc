@@ -2,14 +2,14 @@ package test
 
 import (
 	"context"
-	"testing"
-	"time"
-	"frpc/server"
-	"frpc/core"
 	"frpc/client"
 	"frpc/controller"
-	"os"
+	"frpc/core"
+	"frpc/server"
 	"log"
+	"os"
+	"testing"
+	"time"
 )
 
 func TestMonitorMetricLog(t *testing.T) {

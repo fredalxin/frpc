@@ -1,8 +1,8 @@
 package client
 
 import (
-	"frpc/registry"
 	"frpc/core"
+	"frpc/registry"
 )
 
 type RegistryClient struct {

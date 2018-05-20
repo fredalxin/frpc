@@ -2,13 +2,13 @@ package test
 
 import (
 	"context"
+	"fmt"
+	"frpc/client"
+	"frpc/core"
+	"frpc/protocol"
+	"frpc/server"
 	"testing"
 	"time"
-	"frpc/server"
-	"frpc/protocol"
-	"frpc/core"
-	"frpc/client"
-	"fmt"
 )
 
 func TestClient(t *testing.T) {
@@ -79,8 +79,7 @@ func TestProtobuf(t *testing.T) {
 		A: 10,
 		B: 20,
 	}
-	pbReply := &ProtoReply{
-	}
+	pbReply := &ProtoReply{}
 	doCallProto(t, c, pbArgs, pbReply)
 }
 

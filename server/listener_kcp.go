@@ -1,9 +1,9 @@
 package server
 
 import (
-	"net"
-	kcp "github.com/xtaci/kcp-go"
 	"errors"
+	kcp "github.com/xtaci/kcp-go"
+	"net"
 )
 
 func makeKcpListener(s *Server, address string) (ln net.Listener, err error) {

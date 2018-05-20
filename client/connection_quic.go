@@ -1,10 +1,10 @@
 package client
 
 import (
-	"net"
 	"crypto/tls"
-	quic "github.com/marten-seemann/quic-conn"
 	"frpc/log"
+	quic "github.com/marten-seemann/quic-conn"
+	"net"
 )
 
 func newQuicConn(client *Client, network string, address string) (net.Conn, error) {

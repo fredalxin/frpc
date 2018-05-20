@@ -1,9 +1,4 @@
 package core
 
-type Plugin interface{
-
+type Plugin interface {
 }
-
-
-
-

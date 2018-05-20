@@ -2,14 +2,14 @@ package test
 
 import (
 	"context"
+	"errors"
+	"frpc/circuit"
+	"frpc/client"
+	"frpc/core"
+	"frpc/server"
+	"log"
 	"testing"
 	"time"
-	"frpc/server"
-	"frpc/core"
-	"frpc/client"
-	"log"
-	"frpc/circuit"
-	"errors"
 )
 
 func TestLocalCircuitBreaker(t *testing.T) {
@@ -51,7 +51,7 @@ func TestSimpleBreaker(t *testing.T) {
 		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
 		Selector(core.Random).
 		FailMode(core.FailFast).
-		Breaker(circuit.NewSimpleCircuitBreaker(5, 100*time.Millisecond),0)
+		Breaker(circuit.NewSimpleCircuitBreaker(5, 100*time.Millisecond), 0)
 
 	defer client.Close()
 
@@ -74,7 +74,6 @@ func TestSimpleBreaker(t *testing.T) {
 	}
 }
 
-
 func TestThresholdBreaker(t *testing.T) {
 	s, _ := server.
 		NewServer().
@@ -91,7 +90,7 @@ func TestThresholdBreaker(t *testing.T) {
 		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
 		Selector(core.Random).
 		FailMode(core.FailFast).
-		Breaker(circuit.NewThresholdBreaker(5),0)
+		Breaker(circuit.NewThresholdBreaker(5), 0)
 
 	defer client.Close()
 
@@ -130,7 +129,7 @@ func TestConsecutiveBreaker(t *testing.T) {
 		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
 		Selector(core.Random).
 		FailMode(core.FailFast).
-		Breaker(circuit.NewConsecutiveBreaker(5),0)
+		Breaker(circuit.NewConsecutiveBreaker(5), 0)
 
 	defer client.Close()
 
@@ -153,7 +152,6 @@ func TestConsecutiveBreaker(t *testing.T) {
 	}
 }
 
-
 func TestRateBreaker(t *testing.T) {
 	s, _ := server.
 		NewServer().
@@ -170,7 +168,7 @@ func TestRateBreaker(t *testing.T) {
 		Discovery(core.Consul, "/frpc_test", "ArithB", []string{"localhost:32787"}).
 		Selector(core.Random).
 		FailMode(core.FailFast).
-		Breaker(circuit.NewRateBreaker(0.5,10),0)
+		Breaker(circuit.NewRateBreaker(0.5, 10), 0)
 
 	defer client.Close()
 

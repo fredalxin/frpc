@@ -1,4 +1,4 @@
-package monitor_controller
+package controller
 
 import (
 	"net"

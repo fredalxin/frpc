@@ -7,7 +7,7 @@ import (
 	"frpc/server"
 	"frpc/core"
 	"frpc/client"
-	"frpc/monitor"
+	"frpc/controller"
 	"os"
 	"log"
 )
@@ -16,7 +16,7 @@ func TestMonitorMetricLog(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		Metric(monitor.NewMetric().Log(5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))).
+		Metric(controller.NewMetric().Log(5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))).
 		Register(new(Arith))
 
 	go s.ServeProxy()
@@ -75,7 +75,7 @@ func TestMonitorMetricGraphite(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		Metric(monitor.NewMetric().CaptureRunTimeStats().Graphite(1e9, "frpc.services.host.127_0_0_1", "127.0.0.1:2003")).
+		Metric(controller.NewMetric().CaptureRunTimeStats().Graphite(1e9, "frpc.services.host.127_0_0_1", "127.0.0.1:2003")).
 		Register(new(Arith))
 
 	go s.ServeProxy()
@@ -134,7 +134,7 @@ func TestMonitorTrace(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		Trace(monitor.NewTrace().ExportListner(":8088")).
+		Trace(controller.NewTrace().ExportListner(":8088")).
 		Register(new(Arith))
 
 	go s.ServeProxy()
@@ -193,7 +193,7 @@ func TestMonitorRateLimit(t *testing.T) {
 	s, _ := server.
 		NewServer().
 		Registry(core.Consul, "/frpc_test", "tcp@localhost:8972", []string{"localhost:32787"}, time.Minute).
-		RateLimit(monitor.NewConnConcurrentLimit(1000*time.Millisecond, 5)).
+		RateLimit(controller.NewConnConcurrentLimit(1000*time.Millisecond, 5)).
 		Register(new(Arith))
 
 	go s.ServeProxy()

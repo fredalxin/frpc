@@ -43,7 +43,7 @@ func (s *Server) RegisterWithMeta(rcvr interface{}, name string, metadata string
 	if s.registry.Registry != nil {
 		s.registry.Registry.Register(name, rcvr, metadata)
 	}
-	//todo monitor
+	//todo controller
 	s.monitor.Register(name, rcvr, metadata)
 
 	return s, s.register(rcvr, name, true)

@@ -11,7 +11,6 @@ import (
 	"frpc/log"
 	"errors"
 	"github.com/docker/libkv/store/consul"
-	"github.com/docker/libkv/store/etcd"
 )
 
 func init() {
@@ -107,7 +106,7 @@ func (p *ConsulRegister) Register(name string, rcvr interface{}, metadata string
 	}
 
 	if p.store == nil {
-		etcd.Register()
+		consul.Register()
 		store, err := libkv.NewStore(store.CONSUL, p.ConsulAddr, p.Options)
 		if err != nil {
 			log.Errorf("cannot create etcd registry: %v", err)

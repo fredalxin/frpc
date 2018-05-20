@@ -144,12 +144,12 @@ func (s *Server) serveListener(ln net.Listener) error {
 		s.activeConn[conn] = struct{}{}
 		s.mu.Unlock()
 
-		//todo monitor
-		//if s.monitor.metric != (monitor.Metric{}) {
-		//	s.monitor.metric.HandleConn(conn)
+		//todo controller
+		//if s.controller.metric != (controller.Metric{}) {
+		//	s.controller.metric.HandleConn(conn)
 		//}
-		//if s.monitor.trace != (monitor.Trace{}) {
-		//	s.monitor.trace.HandleConn(conn)
+		//if s.controller.trace != (controller.Trace{}) {
+		//	s.controller.trace.HandleConn(conn)
 		//}
 		conn, ok := s.monitor.HandleConn(conn)
 		if !ok {
@@ -276,12 +276,12 @@ func (server *Server) serveConn(conn net.Conn) {
 				data := res.Encode()
 				conn.Write(data)
 			}
-			//todo monitor
-			//if server.monitor.metric != (monitor.Metric{}) {
-			//	server.monitor.metric.PostResponse(ctx, req, res, err)
+			//todo controller
+			//if server.controller.metric != (controller.Metric{}) {
+			//	server.controller.metric.PostResponse(ctx, req, res, err)
 			//}
-			//if server.monitor.trace != (monitor.Trace{}) {
-			//	server.monitor.trace.PostResponse(ctx, req, res, err)
+			//if server.controller.trace != (controller.Trace{}) {
+			//	server.controller.trace.PostResponse(ctx, req, res, err)
 			//}
 			server.monitor.PostResponse(ctx, req, res, err)
 			protocol.FreeMsg(req)
@@ -321,7 +321,7 @@ func (s *Server) decodeRequest(ctx context.Context, r io.Reader) (req *protocol.
 	// pool req?
 	req = protocol.GetMsgs()
 	err = req.Decode(r)
-	//todo monitor
+	//todo controller
 	s.monitor.PostRequest(ctx, req, err)
 	return req, err
 }

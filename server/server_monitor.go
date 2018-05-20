@@ -1,7 +1,7 @@
 package server
 
 import (
-	"frpc/monitor"
+	"frpc/controller"
 	"net"
 	"context"
 	"frpc/protocol"
@@ -9,20 +9,20 @@ import (
 )
 
 type MonitorServer struct {
-	monitors []monitor.Monitor
+	monitors []controller.Controller
 }
 
-func (s *Server) Metric(metric *monitor.Metric) *Server {
+func (s *Server) Metric(metric *controller.Metric) *Server {
 	s.monitor.monitors = append(s.monitor.monitors, metric)
 	return s
 }
 
-func (s *Server) Trace(trace *monitor.Trace) *Server {
+func (s *Server) Trace(trace *controller.Trace) *Server {
 	s.monitor.monitors = append(s.monitor.monitors, trace)
 	return s
 }
 
-func (s *Server) RateLimit(rateLimit *monitor.RateLimit) *Server {
+func (s *Server) RateLimit(rateLimit *controller.RateLimit) *Server {
 	s.monitor.monitors = append(s.monitor.monitors, rateLimit)
 	return s
 }
@@ -30,7 +30,7 @@ func (s *Server) RateLimit(rateLimit *monitor.RateLimit) *Server {
 func (m *MonitorServer) Register(name string, rcvr interface{}, metadata string) error {
 	var es []error
 	for _, m := range m.monitors {
-		if monitor, ok := m.(monitor.Monitor); ok {
+		if monitor, ok := m.(controller.Controller); ok {
 			err := monitor.Register(name, rcvr, metadata)
 			if err != nil {
 				es = append(es, err)
@@ -47,7 +47,7 @@ func (m *MonitorServer) Register(name string, rcvr interface{}, metadata string)
 func (m *MonitorServer) HandleConn(conn net.Conn) (net.Conn, bool) {
 	var flag bool
 	for _, m := range m.monitors {
-		if monitor, ok := m.(monitor.Monitor); ok {
+		if monitor, ok := m.(controller.Controller); ok {
 			conn, flag = monitor.HandleConn(conn)
 			if !flag { //interrupt
 				conn.Close()
@@ -59,7 +59,7 @@ func (m *MonitorServer) HandleConn(conn net.Conn) (net.Conn, bool) {
 }
 func (m *MonitorServer) PostRequest(ctx context.Context, req *protocol.Message, err error) error {
 	for _, m := range m.monitors {
-		if monitor, ok := m.(monitor.Monitor); ok {
+		if monitor, ok := m.(controller.Controller); ok {
 			err := monitor.PostRequest(ctx, req, err)
 			if err != nil {
 				return err
@@ -70,7 +70,7 @@ func (m *MonitorServer) PostRequest(ctx context.Context, req *protocol.Message, 
 }
 func (m *MonitorServer) PostResponse(ctx context.Context, req *protocol.Message, res *protocol.Message, err error) error {
 	for _, m := range m.monitors {
-		if monitor, ok := m.(monitor.Monitor); ok {
+		if monitor, ok := m.(controller.Controller); ok {
 			err := monitor.PostResponse(ctx, req, res, err)
 			if err != nil {
 				return err

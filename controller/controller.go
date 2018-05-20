@@ -1,4 +1,4 @@
-package monitor
+package monitor_controller
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"frpc/protocol"
 )
 
-type Monitor interface {
+type MonitorController interface {
 	Register(name string, rcvr interface{}, metadata string) (err error)
 	HandleConn(conn net.Conn) (net.Conn, bool)
 	PostRequest(ctx context.Context, req *protocol.Message, e error) error

@@ -1,4 +1,4 @@
-package monitor
+package monitor_controller
 
 import (
 	"github.com/rcrowley/go-metrics"

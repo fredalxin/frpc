@@ -29,17 +29,16 @@ const (
 
 type Server struct {
 	//待开发 option plugin
-	option       Option
-	serviceMapMu sync.RWMutex
-	serviceMap   map[string]*service
-	mu           sync.RWMutex
-	doneChan     chan struct{}
-	ln           net.Listener
-	activeConn   map[net.Conn]struct{}
-	registry     RegistryServer
-	controller   ControllerServer
-
-	serviceAddress string
+	option           option
+	serviceMapMu     sync.RWMutex
+	serviceMap       map[string]*service
+	mu               sync.RWMutex
+	doneChan         chan struct{}
+	ln               net.Listener
+	activeConn       map[net.Conn]struct{}
+	registryServer   registryServer
+	controllerServer controllerServer
+	serviceAddress   string
 }
 
 func NewServer() *Server {
@@ -48,7 +47,7 @@ func NewServer() *Server {
 
 func newServer() *Server {
 	return &Server{
-		option: Option{
+		option: option{
 			configs: make(map[string]interface{}),
 		},
 	}
@@ -144,14 +143,14 @@ func (s *Server) serveListener(ln net.Listener) error {
 		s.activeConn[conn] = struct{}{}
 		s.mu.Unlock()
 
-		//todo controller
-		//if s.controller.metric != (controller.Metric{}) {
-		//	s.controller.metric.HandleConn(conn)
+		//todo controllerServer
+		//if s.controllerServer.metric != (controllerServer.Metric{}) {
+		//	s.controllerServer.metric.HandleConn(conn)
 		//}
-		//if s.controller.trace != (controller.Trace{}) {
-		//	s.controller.trace.HandleConn(conn)
+		//if s.controllerServer.trace != (controllerServer.Trace{}) {
+		//	s.controllerServer.trace.HandleConn(conn)
 		//}
-		conn, ok := s.controller.HandleConn(conn)
+		conn, ok := s.controllerServer.HandleConn(conn)
 		if !ok {
 			continue
 		}
@@ -180,7 +179,7 @@ func (s *Server) serveHTTPListner(ln net.Listener, rpcPath string) {
 
 var connected = "200 Connected to frpc"
 
-//http.Handler的实现
+//implement http.Handler
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "CONNECT" {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -224,8 +223,8 @@ func (server *Server) serveConn(conn net.Conn) {
 	for {
 		t := time.Now()
 		//timeout
-		if server.option.ReadTimeout != 0 {
-			conn.SetReadDeadline(t.Add(server.option.ReadTimeout))
+		if server.option.readTimeout != 0 {
+			conn.SetReadDeadline(t.Add(server.option.readTimeout))
 		}
 		//decode request
 		//可以加一些信息context
@@ -240,8 +239,8 @@ func (server *Server) serveConn(conn net.Conn) {
 			return
 		}
 		//timeout
-		if server.option.WriteTimeout != 0 {
-			conn.SetWriteDeadline(t.Add(server.option.WriteTimeout))
+		if server.option.writeTimeout != 0 {
+			conn.SetWriteDeadline(t.Add(server.option.writeTimeout))
 		}
 		//record request time
 		ctx = context.WithValue(ctx, core.StartRequestContextKey, time.Now().UnixNano())
@@ -276,14 +275,14 @@ func (server *Server) serveConn(conn net.Conn) {
 				data := res.Encode()
 				conn.Write(data)
 			}
-			//todo controller
-			//if server.controller.metric != (controller.Metric{}) {
-			//	server.controller.metric.PostResponse(ctx, req, res, err)
+			//todo controllerServer
+			//if server.controllerServer.metric != (controllerServer.Metric{}) {
+			//	server.controllerServer.metric.PostResponse(ctx, req, res, err)
 			//}
-			//if server.controller.trace != (controller.Trace{}) {
-			//	server.controller.trace.PostResponse(ctx, req, res, err)
+			//if server.controllerServer.trace != (controllerServer.Trace{}) {
+			//	server.controllerServer.trace.PostResponse(ctx, req, res, err)
 			//}
-			server.controller.PostResponse(ctx, req, res, err)
+			server.controllerServer.PostResponse(ctx, req, res, err)
 			protocol.FreeMsg(req)
 			protocol.FreeMsg(res)
 		}()
@@ -321,8 +320,8 @@ func (s *Server) decodeRequest(ctx context.Context, r io.Reader) (req *protocol.
 	// pool req?
 	req = protocol.GetMsgs()
 	err = req.Decode(r)
-	//todo controller
-	s.controller.PostRequest(ctx, req, err)
+	//todo controllerServer
+	s.controllerServer.PostRequest(ctx, req, err)
 	return req, err
 }
 
@@ -357,10 +356,10 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (resp
 	var argv, replyv reflect.Value
 	// 解析请求中的args
 	argIsValue := false // if true, need to indirect before calling.
-	if mtype.ArgType.Kind() == reflect.Ptr {
-		argv = reflect.New(mtype.ArgType.Elem())
+	if mtype.argType.Kind() == reflect.Ptr {
+		argv = reflect.New(mtype.argType.Elem())
 	} else {
-		argv = reflect.New(mtype.ArgType)
+		argv = reflect.New(mtype.argType)
 		argIsValue = true
 	}
 
@@ -380,7 +379,7 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (resp
 		argv = argv.Elem()
 	}
 
-	replyv = reflect.New(mtype.ReplyType.Elem())
+	replyv = reflect.New(mtype.replyType.Elem())
 
 	err = service.call(ctx, mtype, argv, replyv)
 	if err != nil {

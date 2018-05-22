@@ -33,17 +33,17 @@ func (c *Client) Connect(network, address string) error {
 	}
 
 	if err == nil && conn != nil {
-		if c.option.ReadTimeout != 0 {
-			conn.SetReadDeadline(time.Now().Add(c.option.ReadTimeout))
+		if c.option.readTimeout != 0 {
+			conn.SetReadDeadline(time.Now().Add(c.option.readTimeout))
 		}
-		if c.option.WriteTimeout != 0 {
-			conn.SetWriteDeadline(time.Now().Add(c.option.WriteTimeout))
+		if c.option.writeTimeout != 0 {
+			conn.SetWriteDeadline(time.Now().Add(c.option.writeTimeout))
 		}
 		c.conn = conn
 		c.r = bufio.NewReaderSize(conn, ReaderBuffsize)
 		go c.handleResponse()
 
-		if c.option.Heartbeat && c.option.HeartbeatInterval > 0 {
+		if c.option.heartbeat && c.option.heartbeatInterval > 0 {
 			go c.heartbeat()
 		}
 	}
@@ -54,11 +54,11 @@ var connected = "200 Connected to frpc"
 
 //http实现
 func newHttpConn(client *Client, network string, address string) (net.Conn, error) {
-	path := client.option.RPCPath
+	path := client.option.rpcPath
 	if path == "" {
 		path = core.DefaultRPCPath
 	}
-	conn, err := net.DialTimeout("tcp", address, client.option.ConnTimeout)
+	conn, err := net.DialTimeout("tcp", address, client.option.connTimeout)
 	if err != nil {
 		log.Errorf("failed to dial server with http: %v", err)
 		return nil, err
@@ -86,7 +86,7 @@ func newHttpConn(client *Client, network string, address string) (net.Conn, erro
 
 //tcp unix等
 func newDirectConn(client *Client, network string, address string) (net.Conn, error) {
-	conn, err := net.DialTimeout(network, address, client.option.ConnTimeout)
+	conn, err := net.DialTimeout(network, address, client.option.connTimeout)
 	if err != nil {
 		log.Errorf("failed to dial server with tcp: %v", err)
 		return nil, err

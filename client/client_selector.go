@@ -7,9 +7,9 @@ import (
 )
 
 func (c *Client) Selector(selectorMode core.SelectMode) *Client {
-	servers := c.registry.servers
+	servers := c.registryClient.servers
 	if servers == nil {
-		log.Errorf("please set registry first")
+		log.Errorf("please set registryClient first")
 	}
 	c.selector = selector.NewSelector(selectorMode, servers)
 	return c

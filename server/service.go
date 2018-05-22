@@ -18,8 +18,8 @@ var typeOfContext = reflect.TypeOf((*context.Context)(nil)).Elem()
 type methodType struct {
 	sync.Mutex
 	method    reflect.Method
-	ArgType   reflect.Type
-	ReplyType reflect.Type
+	argType   reflect.Type
+	replyType reflect.Type
 	numCalls  uint
 }
 
@@ -40,11 +40,11 @@ func (s *Server) RegisterWithName(rcvr interface{}, name string) (*Server, error
 }
 
 func (s *Server) RegisterWithMeta(rcvr interface{}, name string, metadata string) (*Server, error) {
-	if s.registry.Registry != nil {
-		s.registry.Registry.Register(name, rcvr, metadata)
+	if s.registryServer.registry != nil {
+		s.registryServer.registry.Register(name, rcvr, metadata)
 	}
-	//todo controller
-	s.controller.Register(name, rcvr, metadata)
+	//todo controllerServer
+	s.controllerServer.Register(name, rcvr, metadata)
 
 	return s, s.register(rcvr, name, true)
 }
@@ -162,7 +162,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
 			}
 			continue
 		}
-		methods[mname] = &methodType{method: method, ArgType: argType, ReplyType: replyType}
+		methods[mname] = &methodType{method: method, argType: argType, replyType: replyType}
 	}
 	return methods
 }

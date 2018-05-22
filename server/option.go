@@ -5,21 +5,21 @@ import (
 	"time"
 )
 
-type Option struct {
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
+type option struct {
+	readTimeout  time.Duration
+	writeTimeout time.Duration
 	configs      map[string]interface{}
 	tlsConfig    *tls.Config
 	rpcPath      string
 }
 
 func (s *Server) ReadTimeout(timeout time.Duration) *Server {
-	s.option.ReadTimeout = timeout
+	s.option.readTimeout = timeout
 	return s
 }
 
 func (s *Server) WriteTimeout(timeout time.Duration) *Server {
-	s.option.WriteTimeout = timeout
+	s.option.writeTimeout = timeout
 	return s
 }
 

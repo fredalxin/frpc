@@ -34,13 +34,13 @@ var (
 type seqKey struct{}
 
 type Client struct {
-	option   Option
+	option   option
 	reqMutex sync.Mutex // protects following
 	r        *bufio.Reader
 	conn     net.Conn
 	mutex    sync.RWMutex // protects following
 	seq      uint64
-	pending  map[uint64]*Call
+	pending  map[uint64]*call
 	closing  bool // user has called Close
 	shutdown bool // server has told us to stop
 	//for xclient use
@@ -48,8 +48,8 @@ type Client struct {
 	servicePath       string
 	serverMessageChan chan<- *protocol.Message
 
-	registry RegistryClient
-	selector selector.Selector
+	registryClient registryClient
+	selector       selector.Selector
 }
 
 func NewClient() *Client {
@@ -65,24 +65,24 @@ func newClient() *Client {
 	return &Client{}
 }
 
-type Call struct {
-	ServicePath   string
-	ServiceMethod string            // The name of the service and method to call.
-	Metadata      map[string]string //metadata
-	ResMetadata   map[string]string
-	Args          interface{} // The argument to the function (*struct).
-	Reply         interface{} // The reply from the function (*struct).
+type call struct {
+	servicePath   string
+	serviceMethod string            // The name of the service and method to call.
+	metadata      map[string]string //metadata
+	resMetadata   map[string]string
+	args          interface{} // The argument to the function (*struct).
+	reply         interface{} // The reply from the function (*struct).
 	Error         error       // After completion, the error status.
-	Done          chan *Call
-	Raw           bool
+	Done          chan *call
+	//Raw           bool
 }
 
-func (call *Call) done() {
+func (call *call) done() {
 	select {
 	case call.Done <- call:
 		// ok
 	default:
-		log.Debug("frpc: discarding Call reply due to insufficient Done chan capacity")
+		log.Debug("frpc: discarding call reply due to insufficient Done chan capacity")
 	}
 }
 
@@ -95,7 +95,7 @@ func (client *Client) handleResponse() {
 			break
 		}
 		seq := res.Seq()
-		var call *Call
+		var call *call
 		isServerMessage := (res.MessageType() == protocol.Request && !res.IsHeartbeat() && res.IsOneway())
 		if !isServerMessage {
 			client.mutex.Lock()
@@ -114,12 +114,12 @@ func (client *Client) handleResponse() {
 			}
 		case res.MessageStatusType() == protocol.Error:
 			call.Error = ServiceError(res.Metadata[protocol.ServiceError])
-			call.ResMetadata = res.Metadata
+			call.resMetadata = res.Metadata
 			//
 			call.done()
 		case res.IsHeartbeat():
 			log.Info("client receive heartbeat from server")
-			call.ResMetadata = res.Metadata
+			call.resMetadata = res.Metadata
 			call.done()
 		default:
 			data := res.Payload
@@ -134,14 +134,14 @@ func (client *Client) handleResponse() {
 				if codec == nil {
 					call.Error = ServiceError(ErrUnsupportedCodec.Error())
 				} else {
-					err = codec.Decode(data, call.Reply)
+					err = codec.Decode(data, call.reply)
 					if err != nil {
 						call.Error = ServiceError(err.Error())
 					}
 				}
 			}
 
-			call.ResMetadata = res.Metadata
+			call.resMetadata = res.Metadata
 			call.done()
 		}
 		res.Reset()
@@ -168,7 +168,7 @@ func (client *Client) handleResponse() {
 }
 
 func (client *Client) heartbeat() {
-	t := time.NewTicker(client.option.HeartbeatInterval)
+	t := time.NewTicker(client.option.heartbeatInterval)
 	for range t.C {
 		if client.shutdown || client.closing {
 			return
@@ -182,19 +182,19 @@ func (client *Client) heartbeat() {
 }
 
 //需要处理selectmode
-func (client *Client) Go(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}, done chan *Call) *Call {
-	call := new(Call)
-	call.ServicePath = servicePath
-	call.ServiceMethod = serviceMethod
+func (client *Client) Go(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}, done chan *call) *call {
+	call := new(call)
+	call.servicePath = servicePath
+	call.serviceMethod = serviceMethod
 	meta := ctx.Value(core.ReqMetaDataKey)
 	if meta != nil {
-		call.Metadata = meta.(map[string]string)
+		call.metadata = meta.(map[string]string)
 	}
-	call.Args = args
-	call.Reply = reply
+	call.args = args
+	call.reply = reply
 	if done == nil {
 		//buffer
-		done = make(chan *Call, 10)
+		done = make(chan *call, 10)
 	} else {
 		if cap(done) == 0 {
 			log.Panic("frpc: done channel is unbuffered")
@@ -213,8 +213,8 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 	if c.selector == nil {
 		c.Selector(core.Random)
 	}
-	if c.registry.Discovery == nil {
-		errorStr := "please set registry first,or use callDirect"
+	if c.registryClient.discovery == nil {
+		errorStr := "please set registryClient first,or use callDirect"
 		log.Errorf(errorStr)
 		return errors.New(errorStr)
 	}
@@ -227,7 +227,7 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 	}
 	switch c.option.failMode {
 	case core.FailTry:
-		retries := c.option.Retries
+		retries := c.option.retries
 		for retries > 0 {
 			retries--
 			if client != nil {
@@ -241,7 +241,7 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 		}
 		return err
 	case core.FailOver:
-		retries := c.option.Retries
+		retries := c.option.retries
 		for retries > 0 {
 			retries--
 			if client != nil {
@@ -266,10 +266,10 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 }
 
 func (client *Client) CallDirect(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
-	if client.option.Breaker.breaker != nil {
-		return client.option.Breaker.breaker.Call(func() error {
+	if client.option.breakerClient.breaker != nil {
+		return client.option.breakerClient.breaker.Call(func() error {
 			return client.call(ctx, servicePath, serviceMethod, args, reply)
-		}, client.option.Breaker.timeout)
+		}, client.option.breakerClient.timeout)
 	}
 	return client.call(ctx, servicePath, serviceMethod, args, reply)
 }
@@ -283,7 +283,7 @@ func (c *Client) removeClient(cname string, client *Client) {
 	c.mutex.Unlock()
 
 	if client != nil {
-		client.UnregisterServerMessageChan()
+		client.unregisterServerMessageChan()
 		client.Close()
 	}
 }
@@ -316,9 +316,9 @@ func (c *Client) getCachedClient(cname string) (*Client, error) {
 		network, addr := splitNetworkAndAddress(cname)
 		//todo 属性赋值
 		client = &Client{
-			option:   c.option,
-			registry: c.registry,
-			selector: c.selector,
+			option:         c.option,
+			registryClient: c.registryClient,
+			selector:       c.selector,
 		}
 		err := client.Connect(network, addr)
 		if err != nil {
@@ -326,7 +326,7 @@ func (c *Client) getCachedClient(cname string) (*Client, error) {
 			return nil, err
 		}
 
-		client.RegisterServerMessageChan(c.serverMessageChan)
+		client.registerServerMessageChan(c.serverMessageChan)
 		c.cachedClient[cname] = client
 	}
 	c.mutex.Unlock()
@@ -343,18 +343,18 @@ func splitNetworkAndAddress(server string) (string, string) {
 	return ss[0], ss[1]
 }
 
-func (client *Client) RegisterServerMessageChan(ch chan<- *protocol.Message) {
+func (client *Client) registerServerMessageChan(ch chan<- *protocol.Message) {
 	client.serverMessageChan = ch
 }
 
-func (client *Client) UnregisterServerMessageChan() {
+func (client *Client) unregisterServerMessageChan() {
 	client.serverMessageChan = nil
 }
 
 func (client *Client) call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
 	seq := new(uint64)
 	context.WithValue(ctx, seqKey{}, seq)
-	Done := client.Go(ctx, servicePath, serviceMethod, args, reply, make(chan *Call, 1)).Done
+	Done := client.Go(ctx, servicePath, serviceMethod, args, reply, make(chan *call, 1)).Done
 	var err error
 	select {
 	case <-ctx.Done():
@@ -370,9 +370,9 @@ func (client *Client) call(ctx context.Context, servicePath, serviceMethod strin
 	case call := <-Done:
 		err = call.Error
 		meta := ctx.Value(core.ResMetaDataKey)
-		if meta != nil && len(call.ResMetadata) > 0 {
+		if meta != nil && len(call.resMetadata) > 0 {
 			resMeta := meta.(map[string]string)
-			for k, v := range call.ResMetadata {
+			for k, v := range call.resMetadata {
 				resMeta[k] = v
 			}
 		}
@@ -380,7 +380,7 @@ func (client *Client) call(ctx context.Context, servicePath, serviceMethod strin
 	return err
 }
 
-func (client *Client) send(ctx context.Context, call *Call) {
+func (client *Client) send(ctx context.Context, call *call) {
 	client.mutex.Lock()
 	if client.shutdown || client.closing {
 		call.Error = ErrShutdown
@@ -389,7 +389,7 @@ func (client *Client) send(ctx context.Context, call *Call) {
 		return
 	}
 
-	codec := core.Codecs[client.option.SerializeType]
+	codec := core.Codecs[client.option.serializeType]
 	if codec == nil {
 		call.Error = ErrUnsupportedCodec
 		client.mutex.Unlock()
@@ -398,7 +398,7 @@ func (client *Client) send(ctx context.Context, call *Call) {
 	}
 
 	if client.pending == nil {
-		client.pending = make(map[uint64]*Call)
+		client.pending = make(map[uint64]*call)
 	}
 	seq := client.seq
 	client.seq++
@@ -413,24 +413,24 @@ func (client *Client) send(ctx context.Context, call *Call) {
 	req.SetMessageType(protocol.Request)
 	req.SetSeq(seq)
 
-	if call.ServicePath == "" && call.ServiceMethod == "" {
+	if call.servicePath == "" && call.serviceMethod == "" {
 		req.SetHeartbeat(true)
 	} else {
-		req.SetSerializeType(client.option.SerializeType)
-		if call.Metadata != nil {
-			req.Metadata = call.Metadata
+		req.SetSerializeType(client.option.serializeType)
+		if call.metadata != nil {
+			req.Metadata = call.metadata
 		}
 
-		req.ServicePath = call.ServicePath
-		req.ServiceMethod = call.ServiceMethod
+		req.ServicePath = call.servicePath
+		req.ServiceMethod = call.serviceMethod
 
-		data, err := codec.Encode(call.Args)
+		data, err := codec.Encode(call.args)
 		if err != nil {
 			call.Error = err
 			call.done()
 			return
 		}
-		if len(data) > 1024 && client.option.CompressType == protocol.Gzip {
+		if len(data) > 1024 && client.option.compressType == protocol.Gzip {
 			data, err = util.Zip(data)
 			if err != nil {
 				call.Error = err
@@ -438,7 +438,7 @@ func (client *Client) send(ctx context.Context, call *Call) {
 				return
 			}
 
-			req.SetCompressType(client.option.CompressType)
+			req.SetCompressType(client.option.compressType)
 		}
 		req.Payload = data
 	}
@@ -488,8 +488,8 @@ func (c *Client) Close() error {
 
 			}
 		}()
-		c.registry.Discovery.RemoveWatcher(c.registry.ch)
-		close(c.registry.ch)
+		c.registryClient.discovery.RemoveWatcher(c.registryClient.ch)
+		close(c.registryClient.ch)
 	}()
 	if len(errs) > 0 {
 		return err.NewMultiError(errs)

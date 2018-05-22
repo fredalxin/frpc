@@ -5,8 +5,8 @@ import (
 	"frpc/registry"
 )
 
-type RegistryClient struct {
-	Discovery registry.Discovery
+type registryClient struct {
+	discovery registry.Discovery
 	servers   map[string]string
 	ch        chan []*registry.KV
 }
@@ -16,15 +16,15 @@ func (c *Client) Discovery(mode core.RegistryMode, basePath string, servicePath 
 	c.servicePath = servicePath
 	innerDiscovery := registry.NewDiscovery(mode, basePath, servicePath, etcdAddr)
 	c.cachedClient = make(map[string]*Client)
-	c.registry.Discovery = innerDiscovery
+	c.registryClient.discovery = innerDiscovery
 	pairs := innerDiscovery.GetServices()
 	for _, entry := range pairs {
 		servers[entry.Key] = entry.Value
 	}
-	c.registry.servers = servers
+	c.registryClient.servers = servers
 	ch := innerDiscovery.WatchService()
 	if ch != nil {
-		c.registry.ch = ch
+		c.registryClient.ch = ch
 		go c.watch(ch)
 	}
 	return c
@@ -37,7 +37,7 @@ func (c *Client) watch(ch chan []*registry.KV) {
 			servers[p.Key] = p.Value
 		}
 		c.mutex.Lock()
-		c.registry.servers = servers
+		c.registryClient.servers = servers
 		c.mutex.Unlock()
 	}
 }

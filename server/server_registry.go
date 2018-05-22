@@ -6,14 +6,14 @@ import (
 	"time"
 )
 
-type RegistryServer struct {
-	Registry registry.Registry
+type registryServer struct {
+	registry registry.Registry
 }
 
 func (s *Server) Registry(mode core.RegistryMode, basePath string, serviceAddress string, registryAddr []string, interval time.Duration) *Server {
 	innerRegistry := registry.NewRegistry(mode, basePath, serviceAddress, registryAddr, interval)
 	s.serviceAddress = serviceAddress
-	s.registry.Registry = innerRegistry
+	s.registryServer.registry = innerRegistry
 	innerRegistry.Start()
 	return s
 }

@@ -8,30 +8,30 @@ import (
 	"net"
 )
 
-type ControllerServer struct {
+type controllerServer struct {
 	controllers []controller.Controller
 }
 
 func (s *Server) Metric(metric *controller.Metric) *Server {
-	s.controller.controllers = append(s.controller.controllers, metric)
+	s.controllerServer.controllers = append(s.controllerServer.controllers, metric)
 	return s
 }
 
 func (s *Server) Trace(trace *controller.Trace) *Server {
-	s.controller.controllers = append(s.controller.controllers, trace)
+	s.controllerServer.controllers = append(s.controllerServer.controllers, trace)
 	return s
 }
 
 func (s *Server) RateLimit(rateLimit *controller.RateLimit) *Server {
-	s.controller.controllers = append(s.controller.controllers, rateLimit)
+	s.controllerServer.controllers = append(s.controllerServer.controllers, rateLimit)
 	return s
 }
 
-func (m *ControllerServer) Register(name string, rcvr interface{}, metadata string) error {
+func (m *controllerServer) Register(name string, rcvr interface{}, metadata string) error {
 	var es []error
 	for _, m := range m.controllers {
-		if monitor, ok := m.(controller.Controller); ok {
-			err := monitor.Register(name, rcvr, metadata)
+		if controller, ok := m.(controller.Controller); ok {
+			err := controller.Register(name, rcvr, metadata)
 			if err != nil {
 				es = append(es, err)
 			}
@@ -44,11 +44,11 @@ func (m *ControllerServer) Register(name string, rcvr interface{}, metadata stri
 	return nil
 }
 
-func (m *ControllerServer) HandleConn(conn net.Conn) (net.Conn, bool) {
+func (m *controllerServer) HandleConn(conn net.Conn) (net.Conn, bool) {
 	var flag bool
 	for _, m := range m.controllers {
-		if monitor, ok := m.(controller.Controller); ok {
-			conn, flag = monitor.HandleConn(conn)
+		if controller, ok := m.(controller.Controller); ok {
+			conn, flag = controller.HandleConn(conn)
 			if !flag { //interrupt
 				conn.Close()
 				return conn, false
@@ -57,10 +57,10 @@ func (m *ControllerServer) HandleConn(conn net.Conn) (net.Conn, bool) {
 	}
 	return conn, true
 }
-func (m *ControllerServer) PostRequest(ctx context.Context, req *protocol.Message, err error) error {
+func (m *controllerServer) PostRequest(ctx context.Context, req *protocol.Message, err error) error {
 	for _, m := range m.controllers {
-		if monitor, ok := m.(controller.Controller); ok {
-			err := monitor.PostRequest(ctx, req, err)
+		if controller, ok := m.(controller.Controller); ok {
+			err := controller.PostRequest(ctx, req, err)
 			if err != nil {
 				return err
 			}
@@ -68,10 +68,10 @@ func (m *ControllerServer) PostRequest(ctx context.Context, req *protocol.Messag
 	}
 	return nil
 }
-func (m *ControllerServer) PostResponse(ctx context.Context, req *protocol.Message, res *protocol.Message, err error) error {
+func (m *controllerServer) PostResponse(ctx context.Context, req *protocol.Message, res *protocol.Message, err error) error {
 	for _, m := range m.controllers {
-		if monitor, ok := m.(controller.Controller); ok {
-			err := monitor.PostResponse(ctx, req, res, err)
+		if controller, ok := m.(controller.Controller); ok {
+			err := controller.PostResponse(ctx, req, res, err)
 			if err != nil {
 				return err
 			}

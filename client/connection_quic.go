@@ -11,7 +11,7 @@ func newQuicConn(client *Client, network string, address string) (net.Conn, erro
 	var conn net.Conn
 	var err error
 
-	tlsConf := client.option.TLSConfig
+	tlsConf := client.option.tlsConfig
 	if tlsConf == nil {
 		tlsConf = &tls.Config{InsecureSkipVerify: true}
 	}

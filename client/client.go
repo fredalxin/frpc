@@ -49,7 +49,8 @@ type Client struct {
 	serverMessageChan chan<- *protocol.Message
 
 	registryClient registryClient
-	selector       selector.Selector
+	//selector       selector.Selector
+	controllerClient controllerClient
 }
 
 func NewClient() *Client {
@@ -210,7 +211,7 @@ func (c *Client) CallProxy(ctx context.Context, serviceMethod string, args inter
 }
 
 func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
-	if c.selector == nil {
+	if c.controllerClient.selector == nil {
 		c.Selector(core.Random)
 	}
 	if c.registryClient.discovery == nil {
@@ -221,11 +222,11 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 
 	cname, client, err := c.selectClient(ctx, servicePath, serviceMethod, args)
 	if err != nil {
-		if c.option.failMode == core.FailFast {
+		if c.controllerClient.failMode == core.FailFast {
 			return err
 		}
 	}
-	switch c.option.failMode {
+	switch c.controllerClient.failMode {
 	case core.FailTry:
 		retries := c.option.retries
 		for retries > 0 {
@@ -266,10 +267,10 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 }
 
 func (client *Client) CallDirect(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
-	if client.option.breakerClient.breaker != nil {
-		return client.option.breakerClient.breaker.Call(func() error {
+	if client.controllerClient.breakerClient.breaker != nil {
+		return client.controllerClient.breakerClient.breaker.Call(func() error {
 			return client.call(ctx, servicePath, serviceMethod, args, reply)
-		}, client.option.breakerClient.timeout)
+		}, client.controllerClient.breakerClient.timeout)
 	}
 	return client.call(ctx, servicePath, serviceMethod, args, reply)
 }
@@ -289,7 +290,7 @@ func (c *Client) removeClient(cname string, client *Client) {
 }
 
 func (c *Client) selectClient(ctx context.Context, servicePath, serviceMethod string, args interface{}) (string, *Client, error) {
-	cname := c.selector.Select(ctx, servicePath, serviceMethod, args)
+	cname := c.controllerClient.selector.Select(ctx, servicePath, serviceMethod, args)
 	if cname == "" {
 		return "", nil, ErrClientNoServer
 	}
@@ -318,7 +319,7 @@ func (c *Client) getCachedClient(cname string) (*Client, error) {
 		client = &Client{
 			option:         c.option,
 			registryClient: c.registryClient,
-			selector:       c.selector,
+			controllerClient:       c.controllerClient,
 		}
 		err := client.Connect(network, addr)
 		if err != nil {

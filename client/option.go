@@ -17,8 +17,8 @@ type option struct {
 	heartbeatInterval time.Duration
 	rpcPath           string
 	retries           int
-	failMode          core.FailMode
-	breakerClient     breakerClient
+	//failMode          core.FailMode
+	//breakerClient     breakerClient
 	//for quic
 	tlsConfig *tls.Config
 	//for kcp
@@ -63,11 +63,6 @@ func (c *Client) RpcPath(path string) *Client {
 
 func (c *Client) Retries(retries int) *Client {
 	c.option.retries = retries
-	return c
-}
-
-func (c *Client) FailMode(failMode core.FailMode) *Client {
-	c.option.failMode = failMode
 	return c
 }
 

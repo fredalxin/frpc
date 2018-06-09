@@ -28,7 +28,7 @@ func (p *Trace) Register(name string, rcvr interface{}, metadata string) error {
 }
 
 func (p *Trace) HandleConn(conn net.Conn) (net.Conn, bool) {
-	tr := trace.New("frpc.Server", "Accept")
+	tr := trace.New("frpc.Server", "AcceptConn")
 	defer tr.Finish()
 	tr.LazyPrintf("accept conn %s", conn.RemoteAddr().String())
 	return conn, true

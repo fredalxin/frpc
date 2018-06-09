@@ -9,9 +9,9 @@ import (
 )
 
 type controllerClient struct {
-	failMode          core.FailMode
-	breakerClient     breakerClient
-	selector       selector.Selector
+	failMode      failMod
+	breakerClient breakerClient
+	selector      selector.Selector
 }
 
 type breakerClient struct {
@@ -26,7 +26,7 @@ func (c *Client) Breaker(breaker circuit.Breaker, timeout time.Duration) *Client
 }
 
 func (c *Client) FailMode(failMode core.FailMode) *Client {
-	c.controllerClient.failMode = failMode
+	c.controllerClient.failMode = newFailMod(failMode)
 	return c
 }
 

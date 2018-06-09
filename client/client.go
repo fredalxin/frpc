@@ -8,7 +8,6 @@ import (
 	err "frpc/error"
 	"frpc/log"
 	"frpc/protocol"
-	"frpc/selector"
 	"frpc/util"
 	"io"
 	"net"
@@ -40,7 +39,7 @@ type Client struct {
 	conn     net.Conn
 	mutex    sync.RWMutex // protects following
 	seq      uint64
-	pending  map[uint64]*call
+	pending  map[uint64]*Call
 	closing  bool // user has called Close
 	shutdown bool // server has told us to stop
 	//for xclient use
@@ -66,24 +65,24 @@ func newClient() *Client {
 	return &Client{}
 }
 
-type call struct {
+type Call struct {
 	servicePath   string
-	serviceMethod string            // The name of the service and method to call.
+	serviceMethod string            // The name of the service and method to Call.
 	metadata      map[string]string //metadata
 	resMetadata   map[string]string
 	args          interface{} // The argument to the function (*struct).
 	reply         interface{} // The reply from the function (*struct).
 	Error         error       // After completion, the error status.
-	Done          chan *call
+	Done          chan *Call
 	//Raw           bool
 }
 
-func (call *call) done() {
+func (call *Call) done() {
 	select {
 	case call.Done <- call:
 		// ok
 	default:
-		log.Debug("frpc: discarding call reply due to insufficient Done chan capacity")
+		log.Debug("frpc: discarding Call reply due to insufficient Done chan capacity")
 	}
 }
 
@@ -96,7 +95,7 @@ func (client *Client) handleResponse() {
 			break
 		}
 		seq := res.Seq()
-		var call *call
+		var call *Call
 		isServerMessage := (res.MessageType() == protocol.Request && !res.IsHeartbeat() && res.IsOneway())
 		if !isServerMessage {
 			client.mutex.Lock()
@@ -183,8 +182,8 @@ func (client *Client) heartbeat() {
 }
 
 //需要处理selectmode
-func (client *Client) Go(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}, done chan *call) *call {
-	call := new(call)
+func (client *Client) Go(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}, done chan *Call) *Call {
+	call := new(Call)
 	call.servicePath = servicePath
 	call.serviceMethod = serviceMethod
 	meta := ctx.Value(core.ReqMetaDataKey)
@@ -195,7 +194,7 @@ func (client *Client) Go(ctx context.Context, servicePath, serviceMethod string,
 	call.reply = reply
 	if done == nil {
 		//buffer
-		done = make(chan *call, 10)
+		done = make(chan *Call, 10)
 	} else {
 		if cap(done) == 0 {
 			log.Panic("frpc: done channel is unbuffered")
@@ -222,48 +221,52 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 
 	cname, client, err := c.selectClient(ctx, servicePath, serviceMethod, args)
 	if err != nil {
-		if c.controllerClient.failMode == core.FailFast {
+		_, ok := c.controllerClient.failMode.(FailFastMod)
+		if !ok{
 			return err
 		}
 	}
-	switch c.controllerClient.failMode {
-	case core.FailTry:
-		retries := c.option.retries
-		for retries > 0 {
-			retries--
-			if client != nil {
-				err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
-				if err == nil {
-					return nil
-				}
-			}
-			c.removeClient(cname, client)
-			client, _ = c.getCachedClient(cname)
-		}
-		return err
-	case core.FailOver:
-		retries := c.option.retries
-		for retries > 0 {
-			retries--
-			if client != nil {
-				err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
-				if err == nil {
-					return nil
-				}
-			}
-			c.removeClient(cname, client)
-			cname, client, _ = c.selectClient(ctx, servicePath, serviceMethod, args)
-		}
-		return err
-	default: //failfast
-		err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
-		if err != nil {
-			if _, ok := err.(ServiceError); !ok {
-				c.removeClient(cname, client)
-			}
-		}
-		return err
-	}
+	err = c.controllerClient.failMode.Call(c, client, ctx,
+		servicePath, serviceMethod, cname, c.option.retries, args, reply)
+	return err
+	//switch c.controllerClient.failMode {
+	//case core.FailTry:
+	//	retries := c.option.retries
+	//	for retries > 0 {
+	//		retries--
+	//		if client != nil {
+	//			err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
+	//			if err == nil {
+	//				return nil
+	//			}
+	//		}
+	//		c.RemoveClient(cname, client)
+	//		client, _ = c.GetCachedClient(cname)
+	//	}
+	//	return err
+	//case core.FailOver:
+	//	retries := c.option.retries
+	//	for retries > 0 {
+	//		retries--
+	//		if client != nil {
+	//			err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
+	//			if err == nil {
+	//				return nil
+	//			}
+	//		}
+	//		c.RemoveClient(cname, client)
+	//		cname, client, _ = c.SelectClient(ctx, servicePath, serviceMethod, args)
+	//	}
+	//	return err
+	//default: //failfast
+	//	err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
+	//	if err != nil {
+	//		if _, ok := err.(ServiceError); !ok {
+	//			c.RemoveClient(cname, client)
+	//		}
+	//	}
+	//	return err
+	//}
 }
 
 func (client *Client) CallDirect(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
@@ -317,9 +320,9 @@ func (c *Client) getCachedClient(cname string) (*Client, error) {
 		network, addr := splitNetworkAndAddress(cname)
 		//todo 属性赋值
 		client = &Client{
-			option:         c.option,
-			registryClient: c.registryClient,
-			controllerClient:       c.controllerClient,
+			option:           c.option,
+			registryClient:   c.registryClient,
+			controllerClient: c.controllerClient,
 		}
 		err := client.Connect(network, addr)
 		if err != nil {
@@ -355,7 +358,7 @@ func (client *Client) unregisterServerMessageChan() {
 func (client *Client) call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
 	seq := new(uint64)
 	context.WithValue(ctx, seqKey{}, seq)
-	Done := client.Go(ctx, servicePath, serviceMethod, args, reply, make(chan *call, 1)).Done
+	Done := client.Go(ctx, servicePath, serviceMethod, args, reply, make(chan *Call, 1)).Done
 	var err error
 	select {
 	case <-ctx.Done():
@@ -381,7 +384,7 @@ func (client *Client) call(ctx context.Context, servicePath, serviceMethod strin
 	return err
 }
 
-func (client *Client) send(ctx context.Context, call *call) {
+func (client *Client) send(ctx context.Context, call *Call) {
 	client.mutex.Lock()
 	if client.shutdown || client.closing {
 		call.Error = ErrShutdown
@@ -399,7 +402,7 @@ func (client *Client) send(ctx context.Context, call *call) {
 	}
 
 	if client.pending == nil {
-		client.pending = make(map[uint64]*call)
+		client.pending = make(map[uint64]*Call)
 	}
 	seq := client.seq
 	client.seq++

@@ -2,7 +2,6 @@ package client
 
 import (
 	"crypto/tls"
-	"frpc/core"
 	"frpc/protocol"
 	"time"
 )

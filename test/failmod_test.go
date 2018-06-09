@@ -36,6 +36,7 @@ func TestFailTry(t *testing.T) {
 		} else {
 			log.Printf("%d * %d = %d", args.A, args.B, reply.C)
 		}
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
@@ -65,6 +66,7 @@ func TestFailOver(t *testing.T) {
 		} else {
 			log.Printf("%d * %d = %d", args.A, args.B, reply.C)
 		}
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
@@ -94,6 +96,7 @@ func TestFailFast(t *testing.T) {
 		} else {
 			log.Printf("%d * %d = %d", args.A, args.B, reply.C)
 		}
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 

@@ -369,7 +369,7 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (resp
 		return handleError(res, err)
 	}
 
-	//待开发实现类
+	//反序列化
 	err = codec.Decode(req.Payload, argv.Interface())
 	if err != nil {
 		return handleError(res, err)

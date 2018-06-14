@@ -222,58 +222,23 @@ func (c *Client) Call(ctx context.Context, servicePath, serviceMethod string, ar
 	cname, client, err := c.selectClient(ctx, servicePath, serviceMethod, args)
 	if err != nil {
 		_, ok := c.controllerClient.failMode.(FailFastMod)
-		if !ok{
+		if !ok {
 			return err
 		}
 	}
 	err = c.controllerClient.failMode.Call(c, client, ctx,
 		servicePath, serviceMethod, cname, c.option.retries, args, reply)
 	return err
-	//switch c.controllerClient.failMode {
-	//case core.FailTry:
-	//	retries := c.option.retries
-	//	for retries > 0 {
-	//		retries--
-	//		if client != nil {
-	//			err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
-	//			if err == nil {
-	//				return nil
-	//			}
-	//		}
-	//		c.RemoveClient(cname, client)
-	//		client, _ = c.GetCachedClient(cname)
-	//	}
-	//	return err
-	//case core.FailOver:
-	//	retries := c.option.retries
-	//	for retries > 0 {
-	//		retries--
-	//		if client != nil {
-	//			err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
-	//			if err == nil {
-	//				return nil
-	//			}
-	//		}
-	//		c.RemoveClient(cname, client)
-	//		cname, client, _ = c.SelectClient(ctx, servicePath, serviceMethod, args)
-	//	}
-	//	return err
-	//default: //failfast
-	//	err = client.CallDirect(ctx, servicePath, serviceMethod, args, reply)
-	//	if err != nil {
-	//		if _, ok := err.(ServiceError); !ok {
-	//			c.RemoveClient(cname, client)
-	//		}
-	//	}
-	//	return err
-	//}
 }
 
 func (client *Client) CallDirect(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
-	if client.controllerClient.breakerClient.breaker != nil {
-		return client.controllerClient.breakerClient.breaker.Call(func() error {
-			return client.call(ctx, servicePath, serviceMethod, args, reply)
-		}, client.controllerClient.breakerClient.timeout)
+	breaker := client.controllerClient.breakerClient.breaker
+	timeout := client.controllerClient.breakerClient.timeout
+	if breaker != nil {
+		return breaker.Call(
+			func() error {
+				return client.call(ctx, servicePath, serviceMethod, args, reply)
+			}, timeout)
 	}
 	return client.call(ctx, servicePath, serviceMethod, args, reply)
 }

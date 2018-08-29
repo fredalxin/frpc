@@ -211,4 +211,5 @@ func doCallProto(t *testing.T, c *client.Client, args *ProtoArgs, reply *ProtoRe
 		t.Fatalf("expect 200 but got %d", reply.C)
 	}
 	println(reply.C)
+
 }
